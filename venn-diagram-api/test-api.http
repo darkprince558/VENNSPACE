@@ -1,0 +1,22 @@
+### Test Hello World
+GET http://localhost:8080/api/hello
+
+### Get all set names
+GET http://localhost:8080/api/sets
+
+### Get the full partition map (as text)
+GET http://localhost:8080/api/partitions
+
+### --- Set Operations ---
+
+### Get Union (Math U Art)
+GET http://localhost:8080/api/union?setA=Math&setB=Art
+
+### Get Intersection (Math ∩ Science)
+GET http://localhost:8080/api/intersection?setA=Math&setB=Science
+
+### Get Difference (Math \ Science)
+GET http://localhost:8080/api/difference?setA=Math&setB=Science
+
+### Get Complement (Art')
+GET http://localhost:8080/api/complement?set=Art
