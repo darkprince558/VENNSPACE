@@ -1,4 +1,5 @@
 // This file centralizes all communication with your Java back-end.
+// All functions are updated to require a diagramId.
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -12,7 +13,7 @@ const createUrlEncodedForm = (data) => {
             data[key].forEach(value => {
                 params.append(key, value);
             });
-        } else {
+        } else if (data[key] !== null && data[key] !== undefined) {
             params.append(key, data[key]);
         }
     }
@@ -25,11 +26,9 @@ const createUrlEncodedForm = (data) => {
 const apiRequest = async (url, options = {}) => {
     const response = await fetch(`${API_BASE_URL}${url}`, options);
     if (!response.ok) {
-        // Try to get the error message from the Java back-end
         const errorText = await response.text();
         throw new Error(errorText || `Network response was not ok (${response.status})`);
     }
-    // Return JSON by default, but allow text for partitions
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
         return response.json();
@@ -37,29 +36,56 @@ const apiRequest = async (url, options = {}) => {
     return response.text();
 };
 
-// --- GET Requests ---
+// --- Dashboard Requests ---
 
-export const fetchAllData = async () => {
+export const fetchDiagrams = () => {
+    return apiRequest('/diagrams');
+};
+
+export const createBlankDiagram = (name, elementType) => {
+    const body = createUrlEncodedForm({ name, elementType });
+    return apiRequest('/diagrams/blank', { method: 'POST', body });
+};
+
+export const createTemplateDiagram = (templateName) => {
+    const body = createUrlEncodedForm({ templateName });
+    return apiRequest('/diagrams/template', { method: 'POST', body });
+};
+
+
+// --- Editor GET Requests ---
+
+export const fetchDiagramMetadata = (diagramId) => {
+    return apiRequest(`/diagrams/${diagramId}/metadata`);
+};
+
+export const fetchAllData = async (diagramId) => {
     const [setsData, partitionsData, elementsData] = await Promise.all([
-        apiRequest('/sets'),
-        apiRequest('/partitions'), // This will return text
-        apiRequest('/elements')
+        apiRequest(`/diagrams/${diagramId}/sets`),
+        apiRequest(`/diagrams/${diagramId}/partitions`),
+        apiRequest(`/diagrams/${diagramId}/elements`)
     ]);
 
-    elementsData.sort((a, b) => a.localeCompare(b));
+    // Sort elements (which can be numbers or strings)
+    elementsData.sort((a, b) => {
+        if (typeof a === 'number' && typeof b === 'number') {
+            return a - b;
+        }
+        return String(a).localeCompare(String(b));
+    });
 
     return { setsData, partitionsData, elementsData };
 };
 
-export const getElementDetails = (elementName) => {
-    return apiRequest(`/element/${encodeURIComponent(elementName)}`);
+export const getElementDetails = (diagramId, elementName) => {
+    return apiRequest(`/diagrams/${diagramId}/element/${encodeURIComponent(elementName)}`);
 };
 
-export const getSetDetails = (setName) => {
-    return apiRequest(`/set/${encodeURIComponent(setName)}/elements`);
+export const getSetDetails = (diagramId, setName) => {
+    return apiRequest(`/diagrams/${diagramId}/set/${encodeURIComponent(setName)}/elements`);
 };
 
-export const runOperation = (operation, setA, setB) => {
+export const runOperation = (diagramId, operation, setA, setB) => {
     let url = '';
     let queryString = '';
     switch (operation) {
@@ -76,43 +102,43 @@ export const runOperation = (operation, setA, setB) => {
         default:
             throw new Error("Unknown operation");
     }
-    return apiRequest(url);
+    return apiRequest(`/diagrams/${diagramId}${url}`);
 };
 
 
-// --- POST Requests ---
+// --- Editor POST Requests ---
 
-export const createSet = (name) => {
+export const createSet = (diagramId, name) => {
     const body = createUrlEncodedForm({ name });
-    return apiRequest('/sets', { method: 'POST', body });
+    return apiRequest(`/diagrams/${diagramId}/sets`, { method: 'POST', body });
 };
 
-export const renameSet = (oldName, newName) => {
+export const renameSet = (diagramId, oldName, newName) => {
     const body = createUrlEncodedForm({ oldName, newName });
-    return apiRequest('/sets/rename', { method: 'POST', body });
+    return apiRequest(`/diagrams/${diagramId}/sets/rename`, { method: 'POST', body });
 };
 
-export const deleteSet = (name) => {
+export const deleteSet = (diagramId, name) => {
     const body = createUrlEncodedForm({ name });
-    return apiRequest('/sets/delete', { method: 'POST', body });
+    return apiRequest(`/diagrams/${diagramId}/sets/delete`, { method: 'POST', body });
 };
 
-export const updateSetMembership = (name, elements) => {
+export const updateSetMembership = (diagramId, name, elements) => {
     const body = createUrlEncodedForm({ name, elements });
-    return apiRequest('/set/membership', { method: 'POST', body });
+    return apiRequest(`/diagrams/${diagramId}/set/membership`, { method: 'POST', body });
 };
 
-export const renameElement = (oldName, newName) => {
+export const renameElement = (diagramId, oldName, newName) => {
     const body = createUrlEncodedForm({ oldName, newName });
-    return apiRequest('/element/rename', { method: 'POST', body });
+    return apiRequest(`/diagrams/${diagramId}/element/rename`, { method: 'POST', body });
 };
 
-export const updateElementMembership = (name, sets) => {
+export const updateElementMembership = (diagramId, name, sets) => {
     const body = createUrlEncodedForm({ name, sets });
-    return apiRequest('/element', { method: 'POST', body });
+    return apiRequest(`/diagrams/${diagramId}/element`, { method: 'POST', body });
 };
 
-export const deleteElement = (name) => {
+export const deleteElement = (diagramId, name) => {
     const body = createUrlEncodedForm({ name });
-    return apiRequest('/element/delete', { method: 'POST', body });
+    return apiRequest(`/diagrams/${diagramId}/element/delete`, { method: 'POST', body });
 };

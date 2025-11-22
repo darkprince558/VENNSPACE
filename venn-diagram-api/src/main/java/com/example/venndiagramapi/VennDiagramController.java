@@ -8,8 +8,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The "Front Door" (API Controller) for the application.
- * (Class-level Javadoc is unchanged)
+ * API Controller (Front Door) - Rewritten for Multi-Workspace support.
+ *
+ * All endpoints are now in one of two categories:
+ * 1. Dashboard: /api/diagrams/... (managing workspaces)
+ * 2. Editor: /api/diagrams/{diagramId}/... (editing a specific workspace)
  */
 @RestController
 @RequestMapping("/api")
@@ -17,105 +20,149 @@ import java.util.Set;
 public class VennDiagramController {
 
     @Autowired
-    private VennDiagramService service;
+    private DiagramManagerService manager;
 
-    // --- GET Endpoints ---
+    // --- 1. Dashboard Endpoints ---
 
-    @GetMapping("/hello")
-    public String hello() { return "Hello from the Venn Diagram API!"; }
-
-    @GetMapping("/sets")
-    public List<String> getSetNames() { return service.getSetNames(); }
-
-    @GetMapping("/elements")
-    public Set<String> getAllElements() {
-        return service.getAllElements();
-    }
-
-    @GetMapping("/element/{name}")
-    public Set<String> getSetsForElement(@PathVariable String name) {
-        return service.getSetsForElement(name);
+    /**
+     * Gets a list of all available diagram workspaces.
+     */
+    @GetMapping("/diagrams")
+    public List<DiagramWorkspace.Summary> getAllWorkspaces() {
+        return manager.getAllWorkspaces();
     }
 
     /**
-     * NEW: Gets all elements in a specific set.
-     * @param name The name of the set, passed in the URL path.
+     * Creates a new, blank diagram workspace.
      */
-    @GetMapping("/set/{name}/elements")
-    public Set<String> getElementsInSet(@PathVariable String name) {
-        return service.getElementsInSet(name);
-    }
-
-    @GetMapping("/partitions")
-    public String getPartitions() { return service.getPartitions(); }
-
-    // (getUnion, intersection, difference, complement are unchanged)
-    // ...
-    @GetMapping("/union")
-    public Set<String> getUnion(@RequestParam String setA, @RequestParam String setB) {
-        return service.getUnion(setA, setB);
-    }
-    @GetMapping("/intersection")
-    public Set<String> getIntersection(@RequestParam String setA, @RequestParam String setB) {
-        return service.getIntersection(setA, setB);
-    }
-    @GetMapping("/difference")
-    public Set<String> getDifference(@RequestParam String setA, @RequestParam String setB) {
-        return service.getDifference(setA, setB);
-    }
-    @GetMapping("/complement")
-    public Set<String> getComplement(@RequestParam String set) {
-        return service.getComplement(set);
-    }
-
-    // --- POST Endpoints ---
-
-    @PostMapping("/sets")
-    public void addSet(@RequestParam String name) { service.addSet(name); }
-
-    @PostMapping("/sets/delete")
-    public void removeSet(@RequestParam String name) { service.removeSet(name); }
-
-    /**
-     * NEW: Renames a set.
-     */
-    @PostMapping("/sets/rename")
-    public void renameSet(@RequestParam String oldName, @RequestParam String newName) {
-        service.renameSet(oldName, newName);
+    @PostMapping("/diagrams/blank")
+    public DiagramWorkspace.Summary createBlankWorkspace(@RequestParam String name,
+                                                         @RequestParam String elementType) {
+        return manager.createBlankWorkspace(name, elementType).getSummary();
     }
 
     /**
-     * NEW: Updates the full list of elements for a single set.
+     * Creates a new diagram workspace from a probability template.
      */
-    @PostMapping("/set/membership")
-    public void setElementMembershipForSet(@RequestParam String name,
+    @PostMapping("/diagrams/template")
+    public DiagramWorkspace.Summary createTemplateWorkspace(@RequestParam String templateName) {
+        return manager.createTemplateWorkspace(templateName).getSummary();
+    }
+
+    // --- 2. Editor Endpoints (all require a diagramId) ---
+
+    /**
+     * Gets the metadata (name, type) for a single diagram.
+     */
+    @GetMapping("/diagrams/{diagramId}/metadata")
+    public DiagramWorkspace.Summary getWorkspaceMetadata(@PathVariable String diagramId) {
+        return manager.getWorkspace(diagramId).getSummary();
+    }
+
+    /**
+     * Gets all set names for a specific diagram.
+     */
+    @GetMapping("/diagrams/{diagramId}/sets")
+    public List<String> getSetNames(@PathVariable String diagramId) {
+        return manager.getSetNames(diagramId);
+    }
+
+    /**
+     * Gets all elements in the universal set for a specific diagram.
+     */
+    @GetMapping("/diagrams/{diagramId}/elements")
+    public Set<Object> getAllElements(@PathVariable String diagramId) {
+        return manager.getAllElements(diagramId);
+    }
+
+    /**
+     * Gets the list of set names an element belongs to.
+     */
+    @GetMapping("/diagrams/{diagramId}/element/{elementValue}")
+    public Set<String> getSetsForElement(@PathVariable String diagramId,
+                                         @PathVariable String elementValue) {
+        return manager.getSetsForElement(diagramId, elementValue);
+    }
+
+    /**
+     * Gets all elements in a specific set.
+     */
+    @GetMapping("/diagrams/{diagramId}/set/{setName}/elements")
+    public Set<Object> getElementsInSet(@PathVariable String diagramId,
+                                        @PathVariable String setName) {
+        return manager.getElementsInSet(diagramId, setName);
+    }
+
+    /**
+     * Gets the formatted partition table for a diagram.
+     */
+    @GetMapping("/diagrams/{diagramId}/partitions")
+    public String getPartitions(@PathVariable String diagramId) {
+        return manager.getPartitions(diagramId);
+    }
+
+    // --- Set Operations (now with diagramId) ---
+
+    @GetMapping("/diagrams/{diagramId}/union")
+    public Set<Object> getUnion(@PathVariable String diagramId, @RequestParam String setA, @RequestParam String setB) {
+        return manager.getUnion(diagramId, setA, setB);
+    }
+    @GetMapping("/diagrams/{diagramId}/intersection")
+    public Set<Object> getIntersection(@PathVariable String diagramId, @RequestParam String setA, @RequestParam String setB) {
+        return manager.getIntersection(diagramId, setA, setB);
+    }
+    @GetMapping("/diagrams/{diagramId}/difference")
+    public Set<Object> getDifference(@PathVariable String diagramId, @RequestParam String setA, @RequestParam String setB) {
+        return manager.getDifference(diagramId, setA, setB);
+    }
+    @GetMapping("/diagrams/{diagramId}/complement")
+    public Set<Object> getComplement(@PathVariable String diagramId, @RequestParam String set) {
+        return manager.getComplement(diagramId, set);
+    }
+
+    // --- POST Endpoints (now with diagramId) ---
+
+    @PostMapping("/diagrams/{diagramId}/sets")
+    public void addSet(@PathVariable String diagramId, @RequestParam String name) {
+        manager.addSet(diagramId, name);
+    }
+
+    @PostMapping("/diagrams/{diagramId}/sets/delete")
+    public void removeSet(@PathVariable String diagramId, @RequestParam String name) {
+        manager.removeSet(diagramId, name);
+    }
+
+    @PostMapping("/diagrams/{diagramId}/sets/rename")
+    public void renameSet(@PathVariable String diagramId, @RequestParam String oldName, @RequestParam String newName) {
+        manager.renameSet(diagramId, oldName, newName);
+    }
+
+    @PostMapping("/diagrams/{diagramId}/set/membership")
+    public void setElementMembershipForSet(@PathVariable String diagramId,
+                                           @RequestParam String name,
                                            @RequestParam(required = false) Set<String> elements) {
-        service.setElementMembershipForSet(name, elements);
+        manager.setElementMembershipForSet(diagramId, name, elements);
     }
 
-    @PostMapping("/element")
-    public void updateElementMembership(@RequestParam String name,
+    @PostMapping("/diagrams/{diagramId}/element")
+    public void updateElementMembership(@PathVariable String diagramId,
+                                        @RequestParam String name,
                                         @RequestParam(required = false) Set<String> sets) {
-        service.updateElementMembership(name, sets);
+        manager.updateElementMembership(diagramId, name, sets);
     }
 
-    @PostMapping("/element/delete")
-    public void deleteElement(@RequestParam String name) {
-        service.deleteElement(name);
+    @PostMapping("/diagrams/{diagramId}/element/delete")
+    public void deleteElement(@PathVariable String diagramId, @RequestParam String name) {
+        manager.deleteElement(diagramId, name);
     }
 
-    @PostMapping("/element/rename")
-    public void renameElement(@RequestParam String oldName, @RequestParam String newName) {
-        service.renameElement(oldName, newName);
+    @PostMapping("/diagrams/{diagramId}/element/rename")
+    public void renameElement(@PathVariable String diagramId, @RequestParam String oldName, @RequestParam String newName) {
+        manager.renameElement(diagramId, oldName, newName);
     }
 
-    /**
-     * Exception handler to send user-friendly error messages to the front-end.
-     * (Method is unchanged)
-     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
-        // Return a 400 Bad Request status with the error message
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }
