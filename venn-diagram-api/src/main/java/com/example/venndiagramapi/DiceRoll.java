@@ -7,21 +7,25 @@ import java.util.Objects;
  * Used for the "Two Dice Rolls" probability template.
  */
 public class DiceRoll {
-    private final int die1;
-    private final int die2;
+    private final java.util.List<Integer> dice;
 
-    public DiceRoll(int die1, int die2) {
-        this.die1 = die1;
-        this.die2 = die2;
+    public DiceRoll(java.util.List<Integer> dice) {
+        this.dice = new java.util.ArrayList<>(dice);
     }
 
-    public int getDie1() {
-        return die1;
+    public DiceRoll(int... diceValues) {
+        this.dice = new java.util.ArrayList<>();
+        for (int v : diceValues) {
+            this.dice.add(v);
+        }
     }
 
-    public int getDie2() {
-        return die2;
+    public java.util.List<Integer> getDice() {
+        return java.util.Collections.unmodifiableList(dice);
     }
+
+    // Backward compatibility helpers (optional, but might break if used elsewhere)
+    // Better to update usages.
 
     @Override
     public boolean equals(Object o) {
@@ -30,16 +34,26 @@ public class DiceRoll {
         if (o == null || getClass() != o.getClass())
             return false;
         DiceRoll diceRoll = (DiceRoll) o;
-        return die1 == diceRoll.die1 && die2 == diceRoll.die2;
+        return java.util.Objects.equals(dice, diceRoll.dice);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(die1, die2);
+        return java.util.Objects.hash(dice);
     }
 
     @Override
     public String toString() {
-        return String.format("(%d,%d)", die1, die2);
+        // Output JSON format for easier parsing in frontend
+        // {"dice": [1, 2, 3]}
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"dice\": [");
+        for (int i = 0; i < dice.size(); i++) {
+            sb.append(dice.get(i));
+            if (i < dice.size() - 1)
+                sb.append(", ");
+        }
+        sb.append("]}");
+        return sb.toString();
     }
 }

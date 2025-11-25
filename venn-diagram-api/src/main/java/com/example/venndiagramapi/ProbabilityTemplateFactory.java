@@ -13,13 +13,20 @@ public class ProbabilityTemplateFactory {
      * Creates a new workspace based on a template name.
      */
     public static DiagramWorkspace createFromTemplate(String diagramId, String templateName) {
-        switch (templateName) {
-            case "DECK_OF_CARDS":
-                return createDeckOfCards(diagramId);
-            case "TWO_DICE_ROLLS":
-                return createTwoDiceRolls(diagramId);
-            default:
-                throw new IllegalArgumentException("Unknown template name: " + templateName);
+        if ("DECK_OF_CARDS".equals(templateName)) {
+            return createDeckOfCards(diagramId);
+        } else if (templateName.startsWith("DICE_ROLLS_")) {
+            try {
+                int numDice = Integer.parseInt(templateName.substring("DICE_ROLLS_".length()));
+                return createDiceRolls(diagramId, numDice);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid dice count in template: " + templateName);
+            }
+        } else if ("TWO_DICE_ROLLS".equals(templateName)) {
+            // Backward compatibility
+            return createDiceRolls(diagramId, 2);
+        } else {
+            throw new IllegalArgumentException("Unknown template name: " + templateName);
         }
     }
 
@@ -74,40 +81,67 @@ public class ProbabilityTemplateFactory {
         return workspace;
     }
 
-    private static DiagramWorkspace createTwoDiceRolls(String diagramId) {
-        // Use the new DICE_ROLL type
-        DiagramWorkspace workspace = new DiagramWorkspace(diagramId, "Two 6-Sided Dice", "DICE_ROLL");
+    private static DiagramWorkspace createDiceRolls(String diagramId, int numDice) {
+        if (numDice < 1 || numDice > 5) {
+            throw new IllegalArgumentException("Number of dice must be between 1 and 5");
+        }
+
+        DiagramWorkspace workspace = new DiagramWorkspace(diagramId, numDice + " Dice Rolls", "DICE_ROLL");
         VennDiagramModel<Object> model = workspace.getModel();
 
         Set<Object> universalSet = new HashSet<>();
-        Set<Object> sumIs7 = new HashSet<>();
-        Set<Object> doubles = new HashSet<>();
+        Set<Object> sumIs7 = new HashSet<>(); // Only relevant for >= 2 dice, but we can keep generic logic
+        Set<Object> doubles = new HashSet<>(); // All same
         Set<Object> firstRollIsEven = new HashSet<>();
         Set<Object> sumGreaterThan8 = new HashSet<>();
 
-        for (int i = 1; i <= 6; i++) {
-            for (int j = 1; j <= 6; j++) {
-                // Create DiceRoll object instead of String
-                DiceRoll roll = new DiceRoll(i, j);
-                universalSet.add(roll);
-
-                if (i + j == 7)
-                    sumIs7.add(roll);
-                if (i == j)
-                    doubles.add(roll);
-                if (i % 2 == 0)
-                    firstRollIsEven.add(roll);
-                if (i + j > 8)
-                    sumGreaterThan8.add(roll);
-            }
-        }
+        // Generate all combinations recursively
+        generateDiceCombinations(new java.util.ArrayList<>(), numDice, universalSet, sumIs7, doubles, firstRollIsEven,
+                sumGreaterThan8);
 
         model.setUniversalSet(universalSet);
-        model.addSet("Sum is 7", sumIs7);
-        model.addSet("Doubles", doubles);
-        model.addSet("First Roll is Even", firstRollIsEven);
-        model.addSet("Sum > 8", sumGreaterThan8);
+
+        // Add sets based on what makes sense
+        if (numDice >= 2) {
+            model.addSet("Sum is 7", sumIs7);
+            model.addSet("Doubles (All Same)", doubles);
+            model.addSet("Sum > 8", sumGreaterThan8);
+        }
+        model.addSet("First Die Even", firstRollIsEven);
 
         return workspace;
+    }
+
+    private static void generateDiceCombinations(java.util.List<Integer> currentRoll, int targetDice,
+            Set<Object> universalSet,
+            Set<Object> sumIs7,
+            Set<Object> doubles,
+            Set<Object> firstRollIsEven,
+            Set<Object> sumGreaterThan8) {
+        if (currentRoll.size() == targetDice) {
+            DiceRoll roll = new DiceRoll(currentRoll);
+            universalSet.add(roll);
+
+            int sum = currentRoll.stream().mapToInt(Integer::intValue).sum();
+            boolean isAllSame = currentRoll.stream().distinct().count() == 1;
+            boolean isFirstEven = currentRoll.get(0) % 2 == 0;
+
+            if (sum == 7)
+                sumIs7.add(roll);
+            if (isAllSame)
+                doubles.add(roll);
+            if (isFirstEven)
+                firstRollIsEven.add(roll);
+            if (sum > 8)
+                sumGreaterThan8.add(roll);
+            return;
+        }
+
+        for (int i = 1; i <= 6; i++) {
+            currentRoll.add(i);
+            generateDiceCombinations(currentRoll, targetDice, universalSet, sumIs7, doubles, firstRollIsEven,
+                    sumGreaterThan8);
+            currentRoll.remove(currentRoll.size() - 1);
+        }
     }
 }

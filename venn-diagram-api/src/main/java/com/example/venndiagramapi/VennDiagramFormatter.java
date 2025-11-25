@@ -36,7 +36,7 @@ public class VennDiagramFormatter<T> { // Still generic, will be <Object>
                         .map(obj -> {
                             if (obj instanceof DiceRoll) {
                                 DiceRoll d = (DiceRoll) obj;
-                                return String.format("{\"die1\":%d,\"die2\":%d}", d.getDie1(), d.getDie2());
+                                return d.toString(); // DiceRoll.toString() now returns JSON
                             } else if (obj instanceof PlayingCard) {
                                 PlayingCard c = (PlayingCard) obj;
                                 return String.format("{\"rank\":\"%s\",\"suit\":\"%s\"}", c.getRank(), c.getSuit());
