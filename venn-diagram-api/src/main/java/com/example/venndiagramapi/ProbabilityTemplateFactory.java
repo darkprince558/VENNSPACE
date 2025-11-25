@@ -28,8 +28,8 @@ public class ProbabilityTemplateFactory {
         DiagramWorkspace workspace = new DiagramWorkspace(diagramId, "52-Card Deck", "STRING");
         VennDiagramModel<Object> model = workspace.getModel();
 
-        String[] suits = {"H", "D", "C", "S"}; // Hearts, Diamonds, Clubs, Spades
-        String[] ranks = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
+        String[] suits = { "H", "D", "C", "S" }; // Hearts, Diamonds, Clubs, Spades
+        String[] ranks = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
 
         Set<Object> universalSet = new HashSet<>();
         Set<Object> hearts = new HashSet<>();
@@ -45,13 +45,20 @@ public class ProbabilityTemplateFactory {
                 String card = rank + suit;
                 universalSet.add(card);
 
-                if (suit.equals("H")) hearts.add(card);
-                if (suit.equals("D")) diamonds.add(card);
-                if (suit.equals("C")) clubs.add(card);
-                if (suit.equals("S")) spades.add(card);
-                if (suit.equals("H") || suit.equals("D")) redCards.add(card);
-                if (rank.equals("A")) aces.add(card);
-                if (rank.equals("J") || rank.equals("Q") || rank.equals("K")) faceCards.add(card);
+                if (suit.equals("H"))
+                    hearts.add(card);
+                if (suit.equals("D"))
+                    diamonds.add(card);
+                if (suit.equals("C"))
+                    clubs.add(card);
+                if (suit.equals("S"))
+                    spades.add(card);
+                if (suit.equals("H") || suit.equals("D"))
+                    redCards.add(card);
+                if (rank.equals("A"))
+                    aces.add(card);
+                if (rank.equals("J") || rank.equals("Q") || rank.equals("K"))
+                    faceCards.add(card);
             }
         }
 
@@ -68,8 +75,8 @@ public class ProbabilityTemplateFactory {
     }
 
     private static DiagramWorkspace createTwoDiceRolls(String diagramId) {
-        // All outcomes are Strings
-        DiagramWorkspace workspace = new DiagramWorkspace(diagramId, "Two 6-Sided Dice", "STRING");
+        // Use the new DICE_ROLL type
+        DiagramWorkspace workspace = new DiagramWorkspace(diagramId, "Two 6-Sided Dice", "DICE_ROLL");
         VennDiagramModel<Object> model = workspace.getModel();
 
         Set<Object> universalSet = new HashSet<>();
@@ -80,13 +87,18 @@ public class ProbabilityTemplateFactory {
 
         for (int i = 1; i <= 6; i++) {
             for (int j = 1; j <= 6; j++) {
-                String roll = String.format("(%d,%d)", i, j);
+                // Create DiceRoll object instead of String
+                DiceRoll roll = new DiceRoll(i, j);
                 universalSet.add(roll);
 
-                if (i + j == 7) sumIs7.add(roll);
-                if (i == j) doubles.add(roll);
-                if (i % 2 == 0) firstRollIsEven.add(roll);
-                if (i + j > 8) sumGreaterThan8.add(roll);
+                if (i + j == 7)
+                    sumIs7.add(roll);
+                if (i == j)
+                    doubles.add(roll);
+                if (i % 2 == 0)
+                    firstRollIsEven.add(roll);
+                if (i + j > 8)
+                    sumGreaterThan8.add(roll);
             }
         }
 

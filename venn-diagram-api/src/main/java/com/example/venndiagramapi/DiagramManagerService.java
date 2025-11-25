@@ -49,6 +49,18 @@ public class DiagramManagerService {
                 case "NUMBER":
                     // Try to parse as a Double for numerical data
                     return Double.parseDouble(elementValue);
+                case "DICE_ROLL":
+                    // Parse "(d1,d2)" string back to DiceRoll object
+                    if (elementValue.startsWith("(") && elementValue.endsWith(")")) {
+                        String[] parts = elementValue.substring(1, elementValue.length() - 1).split(",");
+                        if (parts.length == 2) {
+                            int d1 = Integer.parseInt(parts[0].trim());
+                            int d2 = Integer.parseInt(parts[1].trim());
+                            return new DiceRoll(d1, d2);
+                        }
+                    }
+                    // Fallback if parsing fails (shouldn't happen if frontend is good)
+                    return elementValue;
                 case "STRING":
                 case "IMAGE_URL":
                 default:
@@ -56,7 +68,8 @@ public class DiagramManagerService {
                     return elementValue;
             }
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Element '" + elementValue + "' is not a valid number for this diagram.");
+            throw new IllegalArgumentException(
+                    "Element '" + elementValue + "' is not a valid format for this diagram.");
         }
     }
 
@@ -73,6 +86,7 @@ public class DiagramManagerService {
 
     /**
      * Creates a new, blank diagram and adds it to the manager.
+     * 
      * @return The newly created workspace.
      */
     public synchronized DiagramWorkspace createBlankWorkspace(String name, String elementType) {
@@ -91,6 +105,7 @@ public class DiagramManagerService {
 
     /**
      * Creates a new diagram from a probability template.
+     * 
      * @return The newly created workspace.
      */
     public synchronized DiagramWorkspace createTemplateWorkspace(String templateName) {
@@ -128,12 +143,15 @@ public class DiagramManagerService {
     public Set<Object> getUnion(String diagramId, String setA, String setB) {
         return getVennModel(diagramId).getUnion(setA, setB);
     }
+
     public Set<Object> getIntersection(String diagramId, String setA, String setB) {
         return getVennModel(diagramId).getIntersection(setA, setB);
     }
+
     public Set<Object> getDifference(String diagramId, String setA, String setB) {
         return getVennModel(diagramId).getDifference(setA, setB);
     }
+
     public Set<Object> getComplement(String diagramId, String set) {
         return getVennModel(diagramId).getComplement(set);
     }

@@ -16,7 +16,7 @@ import java.util.Set;
  */
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:3001", "http://localhost:3002" })
 public class VennDiagramController {
 
     @Autowired
@@ -37,7 +37,7 @@ public class VennDiagramController {
      */
     @PostMapping("/diagrams/blank")
     public DiagramWorkspace.Summary createBlankWorkspace(@RequestParam String name,
-                                                         @RequestParam String elementType) {
+            @RequestParam String elementType) {
         return manager.createBlankWorkspace(name, elementType).getSummary();
     }
 
@@ -80,7 +80,7 @@ public class VennDiagramController {
      */
     @GetMapping("/diagrams/{diagramId}/element/{elementValue}")
     public Set<String> getSetsForElement(@PathVariable String diagramId,
-                                         @PathVariable String elementValue) {
+            @PathVariable String elementValue) {
         return manager.getSetsForElement(diagramId, elementValue);
     }
 
@@ -89,7 +89,7 @@ public class VennDiagramController {
      */
     @GetMapping("/diagrams/{diagramId}/set/{setName}/elements")
     public Set<Object> getElementsInSet(@PathVariable String diagramId,
-                                        @PathVariable String setName) {
+            @PathVariable String setName) {
         return manager.getElementsInSet(diagramId, setName);
     }
 
@@ -107,14 +107,19 @@ public class VennDiagramController {
     public Set<Object> getUnion(@PathVariable String diagramId, @RequestParam String setA, @RequestParam String setB) {
         return manager.getUnion(diagramId, setA, setB);
     }
+
     @GetMapping("/diagrams/{diagramId}/intersection")
-    public Set<Object> getIntersection(@PathVariable String diagramId, @RequestParam String setA, @RequestParam String setB) {
+    public Set<Object> getIntersection(@PathVariable String diagramId, @RequestParam String setA,
+            @RequestParam String setB) {
         return manager.getIntersection(diagramId, setA, setB);
     }
+
     @GetMapping("/diagrams/{diagramId}/difference")
-    public Set<Object> getDifference(@PathVariable String diagramId, @RequestParam String setA, @RequestParam String setB) {
+    public Set<Object> getDifference(@PathVariable String diagramId, @RequestParam String setA,
+            @RequestParam String setB) {
         return manager.getDifference(diagramId, setA, setB);
     }
+
     @GetMapping("/diagrams/{diagramId}/complement")
     public Set<Object> getComplement(@PathVariable String diagramId, @RequestParam String set) {
         return manager.getComplement(diagramId, set);
@@ -139,15 +144,15 @@ public class VennDiagramController {
 
     @PostMapping("/diagrams/{diagramId}/set/membership")
     public void setElementMembershipForSet(@PathVariable String diagramId,
-                                           @RequestParam String name,
-                                           @RequestParam(required = false) Set<String> elements) {
+            @RequestParam String name,
+            @RequestParam(required = false) Set<String> elements) {
         manager.setElementMembershipForSet(diagramId, name, elements);
     }
 
     @PostMapping("/diagrams/{diagramId}/element")
     public void updateElementMembership(@PathVariable String diagramId,
-                                        @RequestParam String name,
-                                        @RequestParam(required = false) Set<String> sets) {
+            @RequestParam String name,
+            @RequestParam(required = false) Set<String> sets) {
         manager.updateElementMembership(diagramId, name, sets);
     }
 
@@ -157,7 +162,8 @@ public class VennDiagramController {
     }
 
     @PostMapping("/diagrams/{diagramId}/element/rename")
-    public void renameElement(@PathVariable String diagramId, @RequestParam String oldName, @RequestParam String newName) {
+    public void renameElement(@PathVariable String diagramId, @RequestParam String oldName,
+            @RequestParam String newName) {
         manager.renameElement(diagramId, oldName, newName);
     }
 
