@@ -25,6 +25,11 @@
       "react-app/jest"
     ]
   },
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!react-router-dom|react-router)"
+    ]
+  },
   "browserslist": {
     "production": [
       ">0.2%",

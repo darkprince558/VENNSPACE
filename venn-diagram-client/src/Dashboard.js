@@ -8,6 +8,7 @@ export default function Dashboard() {
     const [newDiagramName, setNewDiagramName] = useState('');
     const [newDiagramType, setNewDiagramType] = useState('STRING');
     const [template, setTemplate] = useState('DECK_OF_CARDS');
+    const [diceCount, setDiceCount] = useState(2);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -46,10 +47,14 @@ export default function Dashboard() {
     // Handler for creating from a template
     const handleCreateFromTemplate = async (e) => {
         e.preventDefault();
-        console.log("Attempting to create from template:", template);
+        let templateName = template;
+        if (template === 'DICE_ROLLS') {
+            templateName = `DICE_ROLLS_${diceCount}`;
+        }
+        console.log("Attempting to create from template:", templateName);
         setIsLoading(true);
         try {
-            const newDiagram = await api.createTemplateDiagram(template);
+            const newDiagram = await api.createTemplateDiagram(templateName);
             console.log("Creation successful:", newDiagram);
             navigate(`/diagram/${newDiagram.diagramId}`);
         } catch (err) {
@@ -118,9 +123,22 @@ export default function Dashboard() {
                                 disabled={isLoading}
                             >
                                 <option value="DECK_OF_CARDS">Standard 52-Card Deck</option>
-                                <option value="TWO_DICE_ROLLS">Two 6-Sided Dice</option>
+                                <option value="DICE_ROLLS">Dice Rolls</option>
                             </select>
                         </div>
+                        {template === 'DICE_ROLLS' && (
+                            <div style={{ width: '100px' }}>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    min="1"
+                                    max="5"
+                                    value={diceCount}
+                                    onChange={(e) => setDiceCount(parseInt(e.target.value))}
+                                    placeholder="Count"
+                                />
+                            </div>
+                        )}
                         <button type="submit" className="btn btn-secondary" disabled={isLoading}>
                             {isLoading ? 'Creating...' : 'Create'}
                         </button>

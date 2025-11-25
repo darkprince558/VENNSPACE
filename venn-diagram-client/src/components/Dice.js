@@ -35,11 +35,15 @@ const DieFace = ({ value, size = 40 }) => {
     );
 };
 
-export const Dice = ({ die1, die2, size = 30 }) => {
+export const Dice = ({ dice, die1, die2, size = 30 }) => {
+    // Backward compatibility or new array format
+    const diceValues = dice || (die1 && die2 ? [die1, die2] : []);
+
     return (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <DieFace value={die1} size={size} />
-            <DieFace value={die2} size={size} />
+            {diceValues.map((val, i) => (
+                <DieFace key={i} value={val} size={size} />
+            ))}
         </div>
     );
 };

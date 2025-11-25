@@ -5,6 +5,7 @@ import { PlayingCard } from './PlayingCard';
 // Helper to get a unique string key for any element
 const getElementKey = (element) => {
     if (typeof element === 'object' && element !== null) {
+        if ('dice' in element) return `(${element.dice.join(',')})`;
         if ('die1' in element) return `(${element.die1},${element.die2})`;
         if ('rank' in element) return `${element.rank}${element.suit}`;
         return JSON.stringify(element);
@@ -74,8 +75,9 @@ export const SetEditModal = ({
         allElements.forEach(el => {
             let matches = false;
 
-            if (elementType === 'DICE_ROLL' && typeof el === 'object' && 'die1' in el) {
-                const sum = el.die1 + el.die2;
+            if (elementType === 'DICE_ROLL' && typeof el === 'object' && ('dice' in el || 'die1' in el)) {
+                const dice = el.dice || [el.die1, el.die2];
+                const sum = dice.reduce((a, b) => a + b, 0);
 
                 if (ruleType === 'SUM') {
                     if (condition === 'GT') matches = sum > ruleValue;
@@ -84,7 +86,8 @@ export const SetEditModal = ({
                     else if (condition === 'EVEN') matches = sum % 2 === 0;
                     else if (condition === 'ODD') matches = sum % 2 !== 0;
                 } else if (ruleType === 'DOUBLES') {
-                    matches = el.die1 === el.die2;
+                    // Check if all dice are the same
+                    matches = dice.every(d => d === dice[0]);
                 } else if (ruleType === 'DIE_VALUE') {
                     const checkVal = (val) => {
                         if (condition === 'GT') return val > ruleValue;
@@ -94,7 +97,7 @@ export const SetEditModal = ({
                         if (condition === 'ODD') return val % 2 !== 0;
                         return false;
                     };
-                    matches = checkVal(el.die1) || checkVal(el.die2);
+                    matches = dice.some(d => checkVal(d));
                 }
             } else if (elementType === 'PLAYING_CARD' && typeof el === 'object' && 'rank' in el) {
                 if (cardRuleType === 'SUIT') {
@@ -322,8 +325,10 @@ export const SetEditModal = ({
                     }}>
                         {allElements && allElements.length > 0 ? allElements.map((el, idx) => {
                             const key = getElementKey(el);
-                            const isDice = elementType === 'DICE_ROLL' && typeof el === 'object' && 'die1' in el;
+                            const isDice = elementType === 'DICE_ROLL' && typeof el === 'object' && ('dice' in el || 'die1' in el);
                             const isCard = elementType === 'PLAYING_CARD' && typeof el === 'object' && 'rank' in el;
+
+                            const diceValues = isDice ? (el.dice || [el.die1, el.die2]) : [];
 
                             return (
                                 <label key={key} className="flex items-center gap-sm" style={{ cursor: 'pointer' }}>
@@ -334,8 +339,8 @@ export const SetEditModal = ({
                                     />
                                     {isDice ? (
                                         <div className="flex items-center gap-sm">
-                                            <Dice die1={el.die1} die2={el.die2} size={20} />
-                                            <span className="text-sm text-muted">({el.die1},{el.die2})</span>
+                                            <Dice dice={diceValues} size={20} />
+                                            <span className="text-sm text-muted">({diceValues.join(',')})</span>
                                         </div>
                                     ) : isCard ? (
                                         <div className="flex items-center gap-sm">

@@ -10,10 +10,13 @@ const ElementItem = ({ element, onClick, elementType }) => {
         onClick(element);
     };
 
-    // Check if element is a DiceRoll object (has die1 and die2)
-    const isDice = elementType === 'DICE_ROLL' && element && typeof element === 'object' && 'die1' in element;
+    // Check if element is a DiceRoll object (has dice array)
+    const isDice = elementType === 'DICE_ROLL' && element && typeof element === 'object' && ('dice' in element || 'die1' in element);
     // Check if element is a PlayingCard object (has rank and suit)
     const isCard = elementType === 'PLAYING_CARD' && element && typeof element === 'object' && 'rank' in element;
+
+    // Normalize dice
+    const diceValues = isDice ? (element.dice || [element.die1, element.die2]) : [];
 
     return (
         <button
@@ -28,7 +31,7 @@ const ElementItem = ({ element, onClick, elementType }) => {
             }}
         >
             {isDice ? (
-                <Dice die1={element.die1} die2={element.die2} size={30} />
+                <Dice dice={diceValues} size={30} />
             ) : isCard ? (
                 <PlayingCard rank={element.rank} suit={element.suit} size={40} />
             ) : elementType === 'IMAGE_URL' ? (
@@ -41,7 +44,7 @@ const ElementItem = ({ element, onClick, elementType }) => {
             ) : null}
 
             <span className="text-sm text-muted" style={{ marginLeft: (isDice || isCard) ? '10px' : '0' }}>
-                {isDice ? `(${element.die1},${element.die2})` : isCard ? `${element.rank}${element.suit}` : element}
+                {isDice ? `(${diceValues.join(',')})` : isCard ? `${element.rank}${element.suit}` : element}
             </span>
         </button>
     );

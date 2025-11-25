@@ -1,7 +1,23 @@
 import { PlayingCard } from './PlayingCard';
 import { Dice } from './Dice';
 
-// ... (PartitionsColumn component remains same)
+import React, { useMemo } from 'react';
+
+// This component renders the "Live Partitions" card
+export const PartitionsColumn = ({ partitions, isLoading, totalElements, showProbability }) => {
+    return (
+        <div className="card" style={{ flex: 2, minWidth: '400px' }}>
+            <h2 className="mb-md">Live Partitions</h2>
+            {isLoading ? (
+                <p className="text-muted">Loading...</p>
+            ) : (
+                <div style={{ overflowX: 'auto', maxHeight: '700px' }}>
+                    <PartitionTable partitionText={partitions} totalElements={totalElements} showProbability={showProbability} />
+                </div>
+            )}
+        </div>
+    );
+};
 
 /**
  * A dedicated component to parse and display the partition text
@@ -27,20 +43,22 @@ const PartitionTable = ({ partitionText, totalElements, showProbability }) => {
 
                 const diceRegex = /\{"die1":(\d+),"die2":(\d+)\}/g; // Updated to match JSON format if changed, but wait, formatter outputs JSON now?
                 // Wait, let's check VennDiagramFormatter.java again.
-                // Yes: String.format("{\"die1\":%d,\"die2\":%d}", d.getDie1(), d.getDie2());
-
                 // But wait, the previous regex was /\((\d),(\d)\)/g; which matched the OLD toString() format.
                 // I changed the formatter to output JSON for DiceRoll too!
                 // So I need to update Dice parsing as well.
 
-                const diceJsonRegex = /\{"die1":(\d+),"die2":(\d+)\}/g;
+                const diceJsonRegex = /\{"dice":\s*\[(.*?)\]\}/g; // Matches {"dice": [1, 2]}
                 const cardJsonRegex = /\{"rank":"([^"]+)","suit":"([^"]+)"\}/g;
 
                 const diceMatches = [...elementsRaw.matchAll(diceJsonRegex)];
                 const cardMatches = [...elementsRaw.matchAll(cardJsonRegex)];
 
                 if (diceMatches.length > 0) {
-                    elements = diceMatches.map(m => ({ die1: parseInt(m[1]), die2: parseInt(m[2]) }));
+                    elements = diceMatches.map(m => {
+                        // m[1] is "1, 2"
+                        const dice = m[1].split(',').map(s => parseInt(s.trim()));
+                        return { dice };
+                    });
                     isDice = true;
                     count = diceMatches.length;
                 } else if (cardMatches.length > 0) {
@@ -49,11 +67,12 @@ const PartitionTable = ({ partitionText, totalElements, showProbability }) => {
                     count = cardMatches.length;
                 } else {
                     // Fallback for old format or simple strings
-                    const oldDiceRegex = /\((\d),(\d)\)/g;
-                    const oldDiceMatches = [...elementsRaw.matchAll(oldDiceRegex)];
+                    // Old dice format: {"die1":1,"die2":2} or (1,2)
+                    const oldDiceJsonRegex = /\{"die1":(\d+),"die2":(\d+)\}/g;
+                    const oldDiceMatches = [...elementsRaw.matchAll(oldDiceJsonRegex)];
 
                     if (oldDiceMatches.length > 0) {
-                        elements = oldDiceMatches.map(m => ({ die1: parseInt(m[1]), die2: parseInt(m[2]) }));
+                        elements = oldDiceMatches.map(m => ({ dice: [parseInt(m[1]), parseInt(m[2])] }));
                         isDice = true;
                         count = oldDiceMatches.length;
                     } else if (elementsRaw.trim() === '') {
@@ -111,8 +130,8 @@ const PartitionTable = ({ partitionText, totalElements, showProbability }) => {
                                 {row.isDice ? (
                                     <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
                                         {row.elements.map((d, i) => (
-                                            <div key={i} title={`(${d.die1},${d.die2})`}>
-                                                <Dice die1={d.die1} die2={d.die2} size={20} />
+                                            <div key={i} title={`(${d.dice.join(',')})`}>
+                                                <Dice dice={d.dice} size={20} />
                                             </div>
                                         ))}
                                     </div>
