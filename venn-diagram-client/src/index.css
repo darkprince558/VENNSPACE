@@ -369,3 +369,5 @@ p {
 .mt-lg {
     margin-top: var(--spacing-lg);
 }
+
+@import './components/Toolbar.css';

@@ -242,105 +242,115 @@ export default function DiagramEditor() {
         );
     }
 
-    // Header for the diagram editor page
-    const header = (
-        <div className="flex items-center gap-md mb-lg">
-            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/dashboard')}>
-                &larr; Back
-            </button>
-            <div>
-                <h2 className="mb-0">{isLoading ? 'Loading...' : diagramName}</h2>
-                <label className="flex items-center gap-sm mt-sm" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
-                    <input
-                        type="checkbox"
-                        checked={showProbability}
-                        onChange={e => setShowProbability(e.target.checked)}
-                    />
-                    Show Probability Analysis
-                </label>
-                <label className="flex items-center gap-sm mt-xs" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
-                    <input
-                        type="checkbox"
-                        checked={showPartitions}
-                        onChange={e => setShowPartitions(e.target.checked)}
-                    />
-                    Show Partitions
-                </label>
-            </div>
-        </div>
-    );
+
 
     return (
-        <div className="layout-container">
-            {header}
-            <div className="flex gap-lg" style={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
-
-                {/* Column 1: Management */}
-                <div className="flex flex-col gap-md" style={{ flex: 1, minWidth: '300px' }}>
-                    <SetList
-                        setNames={setNames}
-                        setsInfo={setsInfo}
-                        totalElements={allElements.length}
-                        showProbability={showProbability}
-                        onOpenCreateSetModal={handleOpenCreateSetModal}
-                        onOpenEditSetModal={handleOpenEditSetModal}
-                    />
-                    <ElementList
-                        elements={allElements}
-                        elementType={elementType}
-                        onOpenCreateElementModal={handleOpenCreateElementModal}
-                        onOpenEditElementModal={handleOpenEditElementModal}
-                    />
-                    {/* Status message area for all editors */}
-                    {editStatus && (
-                        <div className="card" style={{ padding: '10px', background: 'var(--bg-hover)' }}>
-                            <pre className="mb-0 text-sm" style={{ whiteSpace: 'pre-wrap' }}>{editStatus}</pre>
-                        </div>
-                    )}
+        <div>
+            {/* New Toolbar */}
+            <div className="toolbar">
+                <div className="flex items-center gap-md">
+                    <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => navigate('/dashboard')}
+                        style={{ border: 'none', background: 'transparent', padding: '4px 8px' }}
+                    >
+                        <span style={{ fontSize: '1.2rem' }}>&larr;</span>
+                    </button>
+                    <h2 className="toolbar-title">{isLoading ? 'Loading...' : diagramName}</h2>
                 </div>
 
-                {/* Column 2: Operations */}
-                <OperationsColumn
-                    setNames={setNames}
-                    opResult={opResult}
-                    totalElements={allElements.length}
-                    showProbability={showProbability}
-                    onRunOperation={handleRunOperation}
-                />
+                <div className="flex items-center gap-lg">
+                    <label className="toggle-label">
+                        <input
+                            type="checkbox"
+                            className="toggle-input"
+                            checked={showProbability}
+                            onChange={e => setShowProbability(e.target.checked)}
+                        />
+                        Probability
+                    </label>
+                    <label className="toggle-label">
+                        <input
+                            type="checkbox"
+                            className="toggle-input"
+                            checked={showPartitions}
+                            onChange={e => setShowPartitions(e.target.checked)}
+                        />
+                        Partitions
+                    </label>
+                </div>
+            </div>
 
-                {/* Column 3: Partitions */}
-                {showPartitions && (
-                    <PartitionsColumn
-                        partitions={partitions}
+            <div className="layout-container">
+                <div className="flex gap-lg" style={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
+
+                    {/* Column 1: Management */}
+                    <div className="flex flex-col gap-md" style={{ flex: 1, minWidth: '300px' }}>
+                        <SetList
+                            setNames={setNames}
+                            setsInfo={setsInfo}
+                            totalElements={allElements.length}
+                            showProbability={showProbability}
+                            onOpenCreateSetModal={handleOpenCreateSetModal}
+                            onOpenEditSetModal={handleOpenEditSetModal}
+                        />
+                        <ElementList
+                            elements={allElements}
+                            elementType={elementType}
+                            onOpenCreateElementModal={handleOpenCreateElementModal}
+                            onOpenEditElementModal={handleOpenEditElementModal}
+                        />
+                        {/* Status message area for all editors */}
+                        {editStatus && (
+                            <div className="card" style={{ padding: '10px', background: 'var(--bg-hover)' }}>
+                                <pre className="mb-0 text-sm" style={{ whiteSpace: 'pre-wrap' }}>{editStatus}</pre>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Column 2: Operations */}
+                    <OperationsColumn
+                        setNames={setNames}
+                        opResult={opResult}
                         totalElements={allElements.length}
                         showProbability={showProbability}
-                        isLoading={isLoading}
+                        onRunOperation={handleRunOperation}
                     />
-                )}
 
-                {/* Modals */}
-                <ElementEditModal
-                    isOpen={isElementModalOpen}
-                    currentElement={currentElement}
-                    elementType={elementType}
-                    setNames={setNames}
-                    editStatus={editStatus}
-                    onClose={handleCloseElementModal}
-                    onSave={handleSaveElementModal}
-                    onDelete={handleDeleteElementModal}
-                />
+                    {/* Column 3: Partitions */}
+                    {showPartitions && (
+                        <PartitionsColumn
+                            partitions={partitions}
+                            totalElements={allElements.length}
+                            showProbability={showProbability}
+                            isLoading={isLoading}
+                        />
+                    )}
 
-                <SetEditModal
-                    isOpen={isSetModalOpen}
-                    currentSet={currentSet}
-                    allElements={allElements}
-                    elementType={elementType}
-                    editStatus={editStatus}
-                    onClose={handleCloseSetModal}
-                    onSave={handleSaveSetModal}
-                    onDelete={handleDeleteSetModal}
-                />
+                    {/* Modals */}
+                    <ElementEditModal
+                        isOpen={isElementModalOpen}
+                        currentElement={currentElement}
+                        elementType={elementType}
+                        setNames={setNames}
+                        editStatus={editStatus}
+                        onClose={handleCloseElementModal}
+                        onSave={handleSaveElementModal}
+                        onDelete={handleDeleteElementModal}
+                    />
 
+                    <SetEditModal
+                        isOpen={isSetModalOpen}
+                        currentSet={currentSet}
+                        allElements={allElements}
+                        elementType={elementType}
+                        editStatus={editStatus}
+                        onClose={handleCloseSetModal}
+                        onSave={handleSaveSetModal}
+                        onDelete={handleDeleteSetModal}
+                    />
+
+                </div>
             </div>
         </div>
     );
