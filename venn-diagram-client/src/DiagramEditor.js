@@ -49,9 +49,9 @@ export default function DiagramEditor() {
 
             setDiagramName(diagramName);
             setElementType(elementType);
-            setSetNames(setsData);
-            setPartitions(partitionsData);
-            setAllElements(elementsData);
+            setSetNames(setsData || []);
+            setPartitions(partitionsData || '');
+            setAllElements(elementsData || []);
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -86,10 +86,18 @@ export default function DiagramEditor() {
         setIsElementModalOpen(true);
     };
 
+    const getApiElementName = (element) => {
+        if (typeof element === 'object' && element !== null && 'die1' in element) {
+            return `(${element.die1},${element.die2})`;
+        }
+        return element;
+    };
+
     const handleOpenEditElementModal = async (elementName) => {
         setEditStatus('');
         try {
-            const memberSets = await api.getElementDetails(diagramId, elementName);
+            const apiName = getApiElementName(elementName);
+            const memberSets = await api.getElementDetails(diagramId, apiName);
             setCurrentElement({ name: elementName, memberSets });
             setIsElementModalOpen(true);
         } catch (error) {
@@ -109,17 +117,21 @@ export default function DiagramEditor() {
         setEditStatus(`${actionText} "${newName}"...`);
 
         try {
-            const isRename = !isCreating && newName !== oldName;
+            const oldApiName = getApiElementName(oldName);
+            const newApiName = getApiElementName(newName);
+
+            const isRename = !isCreating && newApiName !== oldApiName;
             if (isRename) {
-                await api.renameElement(diagramId, oldName, newName);
+                await api.renameElement(diagramId, oldApiName, newApiName);
             }
 
             const setsToJoin = Object.keys(elementSetMemberships)
                 .filter(setName => elementSetMemberships[setName] === true);
 
-            await api.updateElementMembership(diagramId, newName, setsToJoin);
+            // For creation/update membership, we use the new name
+            await api.updateElementMembership(diagramId, newApiName, setsToJoin);
 
-            setEditStatus(`Successfully ${actionText.toLowerCase()}d: ${newName}`);
+            setEditStatus(`Successfully ${actionText.toLowerCase()}d: ${newApiName}`);
             handleCloseElementModal();
             await fetchAllData();
 
@@ -129,13 +141,14 @@ export default function DiagramEditor() {
     };
 
     const handleDeleteElementModal = async (elementName) => {
-        if (!window.confirm(`Are you sure you want to PERMANENTLY delete "${elementName}"?`)) {
+        const apiName = getApiElementName(elementName);
+        if (!window.confirm(`Are you sure you want to PERMANENTLY delete "${apiName}"?`)) {
             return;
         }
-        setEditStatus(`Deleting "${elementName}"...`);
+        setEditStatus(`Deleting "${apiName}"...`);
         try {
-            await api.deleteElement(diagramId, elementName);
-            setEditStatus(`Successfully deleted: ${elementName}`);
+            await api.deleteElement(diagramId, apiName);
+            setEditStatus(`Successfully deleted: ${apiName}`);
             handleCloseElementModal();
             await fetchAllData();
         } catch (error) {
@@ -213,52 +226,50 @@ export default function DiagramEditor() {
     // --- Render ---
     if (error) {
         return (
-            <div style={{ color: 'red', padding: '20px' }}>
+            <div className="layout-container text-center text-danger">
                 <h2>Error loading diagram</h2>
                 <p>{error.message}</p>
-                <button onClick={() => navigate('/')}>Back to Dashboard</button>
+                <button className="btn btn-secondary" onClick={() => navigate('/')}>Back to Dashboard</button>
             </div>
         );
     }
 
     // Header for the diagram editor page
     const header = (
-        <div style={{ padding: '0 20px 20px 20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <button onClick={() => navigate('/')} style={{ padding: '8px 12px' }}>
+        <div className="flex items-center gap-md mb-lg">
+            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/')}>
                 &larr; Back
             </button>
             <div>
-                <h2 style={{ margin: 0 }}>{isLoading ? 'Loading...' : diagramName}</h2>
-                <span style={{ color: '#666', fontSize: '0.9em' }}>
-          ID: {diagramId} (Type: {elementType})
-        </span>
+                <h2 className="mb-0">{isLoading ? 'Loading...' : diagramName}</h2>
+                {/* ID display removed as per user request */}
             </div>
         </div>
     );
 
     return (
-        <div>
+        <div className="layout-container">
             {header}
-            <div style={{ display: 'flex', fontFamily: 'sans-serif', padding: '0 20px 20px 20px', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="flex gap-lg" style={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
 
                 {/* Column 1: Management */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', minWidth: '300px' }}>
+                <div className="flex flex-col gap-md" style={{ flex: 1, minWidth: '300px' }}>
                     <SetList
                         setNames={setNames}
                         onOpenCreateSetModal={handleOpenCreateSetModal}
                         onOpenEditSetModal={handleOpenEditSetModal}
                     />
                     <ElementList
-                        allElements={allElements}
+                        elements={allElements}
                         elementType={elementType}
                         onOpenCreateElementModal={handleOpenCreateElementModal}
                         onOpenEditElementModal={handleOpenEditElementModal}
                     />
                     {/* Status message area for all editors */}
                     {editStatus && (
-                        <pre style={{ background: '#f0f0f0', padding: '10px', borderRadius: '5px' }}>
-              {editStatus}
-            </pre>
+                        <div className="card" style={{ padding: '10px', background: 'var(--bg-hover)' }}>
+                            <pre className="mb-0 text-sm" style={{ whiteSpace: 'pre-wrap' }}>{editStatus}</pre>
+                        </div>
                     )}
                 </div>
 
@@ -292,7 +303,6 @@ export default function DiagramEditor() {
                     currentSet={currentSet}
                     allElements={allElements}
                     elementType={elementType}
-                    // FIX: Corrected typo 'editDStatus' to 'editStatus'
                     editStatus={editStatus}
                     onClose={handleCloseSetModal}
                     onSave={handleSaveSetModal}

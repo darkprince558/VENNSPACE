@@ -1,25 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import { Dice } from './Dice';
 
 // This component is the modal for creating/editing an Element
 export const ElementEditModal = ({
-                                     isOpen,
-                                     currentElement,
-                                     setNames,
-                                     editStatus,
-                                     onClose,
-                                     onSave,
-                                     onDelete
-                                 }) => {
+    isOpen,
+    currentElement,
+    setNames = [],
+    elementType,
+    editStatus,
+    onClose,
+    onSave,
+    onDelete
+}) => {
     const [elementNewName, setElementNewName] = useState('');
     const [elementSetMemberships, setElementSetMemberships] = useState({});
 
     const isCreating = currentElement === null;
 
+    // Helper to get display name
+    const getDisplayName = (element) => {
+        if (!element) return '';
+        if (typeof element === 'object' && 'die1' in element) {
+            return `(${element.die1},${element.die2})`;
+        }
+        return String(element);
+    };
+
     // This effect syncs the local state (name, checkboxes) with the props
     // It runs when the modal is opened
     useEffect(() => {
         if (isOpen) {
-            setElementNewName(isCreating ? '' : currentElement.name);
+            setElementNewName(isCreating ? '' : getDisplayName(currentElement.name));
             // currentElement.memberSets is the list we get from the API
             const newMemberships = {};
             setNames.forEach(name => {
@@ -35,6 +46,10 @@ export const ElementEditModal = ({
 
     const handleSave = (e) => {
         e.preventDefault();
+        // If it's a dice roll, we probably shouldn't allow renaming via text input easily
+        // unless we parse it back. For now, let's assume renaming is for strings.
+        // If the user edits the text of a dice roll "(1,2)" to "(3,4)", it might be treated as a string "(3,4)".
+        // This is a limitation for now.
         onSave(currentElement ? currentElement.name : null, elementNewName, elementSetMemberships);
     };
 
@@ -44,35 +59,41 @@ export const ElementEditModal = ({
 
     if (!isOpen) return null;
 
+    const isDice = elementType === 'DICE_ROLL' && currentElement && typeof currentElement.name === 'object';
+
     return (
-        <div style={{
-            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-            background: 'rgba(0, 0, 0, 0.5)', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-            <div style={{ background: 'white', padding: '25px', borderRadius: '8px', width: '90%', maxWidth: '500px' }}>
-                <h2 style={{ marginTop: 0 }}>
-                    {isCreating ? 'Create New Element' : `Edit Element: ${currentElement.name}`}
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <h2 className="mb-md flex items-center gap-sm">
+                    {isCreating ? 'Create New Element' : 'Edit Element:'}
+                    {!isCreating && isDice && (
+                        <Dice die1={currentElement.name.die1} die2={currentElement.name.die2} size={30} />
+                    )}
+                    {!isCreating && !isDice && ` ${currentElement.name}`}
                 </h2>
 
                 <form onSubmit={handleSave}>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>
+                    <div className="form-group">
+                        <label className="label">
                             Element Name:
-                            <input
-                                type="text"
-                                value={elementNewName}
-                                onChange={e => setElementNewName(e.target.value)}
-                                placeholder={isCreating ? 'New element name' : ''}
-                                style={{ padding: '5px', marginLeft: '10px', width: 'calc(100% - 120px)' }}
-                            />
                         </label>
+                        <input
+                            type="text"
+                            value={elementNewName}
+                            onChange={e => setElementNewName(e.target.value)}
+                            placeholder={isCreating ? 'New element name' : ''}
+                            className="input"
+                            disabled={!isCreating && isDice} // Disable renaming for Dice for now to avoid complexity
+                        />
+                        {!isCreating && isDice && (
+                            <p className="text-muted text-sm mt-sm">Renaming dice rolls is not supported yet.</p>
+                        )}
                     </div>
 
-                    <h4 style={{marginTop: '15px', marginBottom: '10px'}}>Set Membership:</h4>
+                    <h4 className="mt-md mb-sm">Set Membership:</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '200px', overflowY: 'auto' }}>
-                        {setNames.length > 0 ? setNames.map(name => (
-                            <label key={name}>
+                        {setNames && setNames.length > 0 ? setNames.map(name => (
+                            <label key={name} className="flex items-center gap-sm">
                                 <input
                                     type="checkbox"
                                     checked={elementSetMemberships[name] || false}
@@ -80,15 +101,15 @@ export const ElementEditModal = ({
                                 />
                                 {name}
                             </label>
-                        )) : <p>No sets exist.</p>}
+                        )) : <p className="text-muted">No sets exist.</p>}
                     </div>
 
-                    <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
-                        <div>
-                            <button type="submit" style={{ padding: '10px 20px', background: '#007bff', color: 'white', border: 'none', borderRadius: '5px' }}>
+                    <div className="flex justify-between mt-lg pt-md" style={{ borderTop: '1px solid var(--border)' }}>
+                        <div className="flex gap-sm">
+                            <button type="submit" className="btn btn-primary">
                                 {isCreating ? 'Create Element' : 'Save Changes'}
                             </button>
-                            <button type="button" onClick={onClose} style={{ marginLeft: '10px', padding: '10px 10px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '5px' }}>
+                            <button type="button" onClick={onClose} className="btn btn-secondary">
                                 Cancel
                             </button>
                         </div>
@@ -96,7 +117,7 @@ export const ElementEditModal = ({
                             <button
                                 type="button"
                                 onClick={handleDelete}
-                                style={{ padding: '10px 10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '5px' }}
+                                className="btn btn-danger"
                             >
                                 Delete Element
                             </button>
@@ -105,9 +126,9 @@ export const ElementEditModal = ({
                 </form>
 
                 {editStatus && (
-                    <pre style={{ background: '#f0f0f0', padding: '10px', borderRadius: '5px', marginTop: '15px' }}>
-            {editStatus}
-          </pre>
+                    <pre className="mt-md p-sm text-sm" style={{ background: 'var(--bg-hover)', borderRadius: 'var(--radius)' }}>
+                        {editStatus}
+                    </pre>
                 )}
             </div>
         </div>

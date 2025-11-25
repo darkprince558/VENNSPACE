@@ -1,37 +1,43 @@
 import React from 'react';
+import { Dice } from './Dice';
 
 /**
  * Renders a single element in the list, adapting to its type.
  */
-const ElementItem = ({ element, elementType, onClick }) => {
-    const style = {
-        display: 'block', width: '100%', textAlign: 'left',
-        padding: '8px 10px', border: 'none', background: 'transparent',
-        cursor: 'pointer', borderBottom: '1px solid #f0f0f0'
+const ElementItem = ({ element, onClick, elementType }) => {
+    const handleClick = () => {
+        onClick(element);
     };
 
-    const handleClick = () => onClick(element);
+    // Check if element is a DiceRoll object (has die1 and die2)
+    const isDice = elementType === 'DICE_ROLL' && element && typeof element === 'object' && 'die1' in element;
 
-    // Adaptive Rendering based on elementType
-    if (elementType === 'IMAGE_URL') {
-        return (
-            <button onClick={handleClick} style={{...style, padding: '5px 10px'}}>
+    return (
+        <button
+            onClick={handleClick}
+            className="list-item list-item-action w-100 flex items-center"
+            style={{
+                width: '100%',
+                textAlign: 'left',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: '1px solid var(--border)'
+            }}
+        >
+            {isDice ? (
+                <Dice die1={element.die1} die2={element.die2} size={30} />
+            ) : elementType === 'IMAGE_URL' ? (
                 <img
                     src={element}
                     alt={element}
-                    style={{ width: '40px', height: '40px', objectFit: 'cover', marginRight: '10px', verticalAlign: 'middle' }}
-                    // Handle broken images
-                    onError={(e) => { e.target.style.display = 'none'; e.target.insertAdjacentHTML('afterend', '<span>(Broken Image Link)</span>'); }}
+                    style={{ width: '40px', height: '40px', objectFit: 'cover', marginRight: '10px', borderRadius: '4px' }}
+                    onError={(e) => { e.target.style.display = 'none'; e.target.insertAdjacentHTML('afterend', '<span class="text-danger text-sm">(Broken Image)</span>'); }}
                 />
-                <span style={{ verticalAlign: 'middle', fontSize: '0.9em', color: '#555' }}>{element}</span>
-            </button>
-        );
-    }
+            ) : null}
 
-    // Default for STRING or NUMBER
-    return (
-        <button onClick={handleClick} style={style}>
-            {element.toString()}
+            <span className="text-sm text-muted" style={{ marginLeft: isDice ? '10px' : '0' }}>
+                {isDice ? `(${element.die1},${element.die2})` : element}
+            </span>
         </button>
     );
 };
@@ -39,36 +45,41 @@ const ElementItem = ({ element, elementType, onClick }) => {
 /**
  * Renders the "All Elements" card
  */
-export const ElementList = ({ allElements, elementType, onOpenCreateElementModal, onOpenEditElementModal }) => {
+export const ElementList = ({
+    elements = [],
+    onOpenCreateElementModal,
+    onOpenEditElementModal,
+    elementType
+}) => {
     return (
-        <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ margin: 0 }}>All Elements</h2>
+        <div className="card">
+            <div className="flex justify-between items-center mb-md">
+                <h2 className="mb-0">All Elements</h2>
                 <button
                     onClick={onOpenCreateElementModal}
-                    style={{ padding: '8px 12px', background: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+                    className="btn btn-primary btn-sm"
                 >
                     + Create New
                 </button>
             </div>
-            <p style={{marginTop: '10px', marginBottom: '10px', fontSize: '0.9em', color: '#999'}}>
+            <p className="text-muted text-sm mb-sm">
                 Click an element to edit or delete it.
             </p>
             <div style={{
                 maxHeight: '400px',
                 overflowY: 'auto',
-                border: '1px solid #eee',
-                borderRadius: '5px',
-                padding: '5px'
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                padding: 'var(--spacing-xs)'
             }}>
-                {allElements.length > 0 ? allElements.map(element => (
+                {elements && elements.length > 0 ? elements.map((el, idx) => (
                     <ElementItem
-                        key={element.toString()} // Use element.toString() as key
-                        element={element}
-                        elementType={elementType}
+                        key={idx}
+                        element={el}
                         onClick={onOpenEditElementModal}
+                        elementType={elementType}
                     />
-                )) : <p style={{padding: '10px'}}>No elements exist.</p>}
+                )) : <p className="text-muted p-sm mb-0">No elements exist.</p>}
             </div>
         </div>
     );

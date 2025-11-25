@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
+import { Dice } from './Dice';
 
 // This component renders the "Set Operations" card
 export const OperationsColumn = ({
-                                     setNames,
-                                     opResult,
-                                     defaultSetA,
-                                     defaultSetB,
-                                     onRunOperation
-                                 }) => {
+    setNames = [],
+    opResult,
+    defaultSetA,
+    defaultSetB,
+    onRunOperation
+}) => {
     // These states are now local to this component
     const [operation, setOperation] = useState('union');
     const [setA, setSetA] = useState(defaultSetA || (setNames.length > 0 ? setNames[0] : ''));
@@ -25,51 +26,111 @@ export const OperationsColumn = ({
         onRunOperation(operation, setA, setB);
     };
 
+    // Helper to render the result content
+    const renderResult = () => {
+        if (!opResult) return null;
+
+        // Try to parse if it looks like a list of DiceRolls
+        // The backend returns a list of objects, which might be stringified or passed as array
+        // If opResult is an array of objects with die1/die2
+        if (Array.isArray(opResult) && opResult.length > 0 && opResult[0].die1) {
+            return (
+                <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                    {opResult.map((roll, i) => (
+                        <div key={i} title={`(${roll.die1},${roll.die2})`}>
+                            <Dice die1={roll.die1} die2={roll.die2} size={24} />
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        // Fallback for string representation (e.g. "[ (1,1), (1,2) ]")
+        // We can try to regex parse it if it's a string
+        if (typeof opResult === 'string' && opResult.includes('die1')) {
+            try {
+                const parsed = JSON.parse(opResult);
+                if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].die1) {
+                    return (
+                        <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                            {parsed.map((roll, i) => (
+                                <div key={i} title={`(${roll.die1},${roll.die2})`}>
+                                    <Dice die1={roll.die1} die2={roll.die2} size={24} />
+                                </div>
+                            ))}
+                        </div>
+                    );
+                }
+            } catch (e) {
+                // Ignore parse error, just show string
+            }
+        }
+
+        return opResult.toString();
+    };
+
     return (
-        <div style={{ flex: 1, border: '1px solid #ccc', padding: '20px', borderRadius: '8px', minWidth: '300px' }}>
-            <h2>Set Operations</h2>
-            <div style={{ marginBottom: '10px' }}>
-                <label>
+        <div className="card" style={{ flex: 1, minWidth: '300px' }}>
+            <h2 className="mb-md">Set Operations</h2>
+            <div className="form-group">
+                <label className="label">
                     Operation:
-                    <select value={operation} onChange={e => setOperation(e.target.value)} style={{ marginLeft: '10px', padding: '5px' }}>
-                        <option value="union">{'Union (A \u222A B)'}</option>
-                        <option value="intersection">{'Intersection (A \u2229 B)'}</option>
-                        <option value="difference">{'Difference (A \\ B)'}</option>
-                        <option value="complement">{'Complement (A\')'}</option>
-                    </select>
                 </label>
+                <select
+                    value={operation}
+                    onChange={e => setOperation(e.target.value)}
+                    className="select"
+                >
+                    <option value="union">{'Union (A \u222A B)'}</option>
+                    <option value="intersection">{'Intersection (A \u2229 B)'}</option>
+                    <option value="difference">{'Difference (A \\ B)'}</option>
+                    <option value="complement">{'Complement (A\')'}</option>
+                </select>
             </div>
-            <div style={{ marginBottom: '10px' }}>
-                <label>
+            <div className="form-group">
+                <label className="label">
                     Set A:
-                    <select value={setA} onChange={e => setSetA(e.target.value)} style={{ marginLeft: '10px', padding: '5px' }}>
-                        {setNames.length > 0 ?
+                </label>
+                <select
+                    value={setA}
+                    onChange={e => setSetA(e.target.value)}
+                    className="select"
+                >
+                    {setNames && setNames.length > 0 ?
+                        setNames.map(name => <option key={name} value={name}>{name}</option>) :
+                        <option>No sets available</option>
+                    }
+                </select>
+            </div>
+            {operation !== 'complement' && (
+                <div className="form-group">
+                    <label className="label">
+                        Set B:
+                    </label>
+                    <select
+                        value={setB}
+                        onChange={e => setSetB(e.target.value)}
+                        className="select"
+                    >
+                        {setNames && setNames.length > 0 ?
                             setNames.map(name => <option key={name} value={name}>{name}</option>) :
                             <option>No sets available</option>
                         }
                     </select>
-                </label>
-            </div>
-            {operation !== 'complement' && (
-                <div style={{ marginBottom: '10px' }}>
-                    <label>
-                        Set B:
-                        <select value={setB} onChange={e => setSetB(e.target.value)} style={{ marginLeft: '10px', padding: '5px' }}>
-                            {setNames.length > 0 ?
-                                setNames.map(name => <option key={name} value={name}>{name}</option>) :
-                                <option>No sets available</option>
-                            }
-                        </select>
-                    </label>
                 </div>
             )}
-            <button onClick={handleRun} style={{ padding: '10px 20px', background: '#007bff', color: 'white', border: 'none', borderRadius: '5px' }} disabled={setNames.length === 0}>
+            <button
+                onClick={handleRun}
+                className="btn btn-primary w-100"
+                style={{ width: '100%' }}
+                disabled={setNames.length === 0}
+            >
                 Run Operation
             </button>
-            <h3 style={{ marginTop: '20px' }}>Result:</h3>
-            <pre style={{ background: '#f0f0f0', padding: '10px', borderRadius: '5px', minHeight: '50px' }}>
-        {opResult}
-      </pre>
+            <h3 className="mt-lg mb-sm">Result:</h3>
+            <div className="code-block">
+                {renderResult()}
+            </div>
         </div>
     );
 };

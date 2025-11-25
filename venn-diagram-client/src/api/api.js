@@ -60,7 +60,8 @@ export const fetchDiagramMetadata = (diagramId) => {
 };
 
 export const fetchAllData = async (diagramId) => {
-    const [setsData, partitionsData, elementsData] = await Promise.all([
+    const [metadata, setsData, partitionsData, elementsData] = await Promise.all([
+        apiRequest(`/diagrams/${diagramId}/metadata`),
         apiRequest(`/diagrams/${diagramId}/sets`),
         apiRequest(`/diagrams/${diagramId}/partitions`),
         apiRequest(`/diagrams/${diagramId}/elements`)
@@ -71,10 +72,24 @@ export const fetchAllData = async (diagramId) => {
         if (typeof a === 'number' && typeof b === 'number') {
             return a - b;
         }
+        // Handle DiceRoll objects for sorting if possible, or just stringify
+        if (typeof a === 'object' && a !== null && 'die1' in a) {
+            if (typeof b === 'object' && b !== null && 'die1' in b) {
+                if (a.die1 !== b.die1) return a.die1 - b.die1;
+                return a.die2 - b.die2;
+            }
+            return -1;
+        }
         return String(a).localeCompare(String(b));
     });
 
-    return { setsData, partitionsData, elementsData };
+    return {
+        diagramName: metadata.name,
+        elementType: metadata.elementType,
+        setsData,
+        partitionsData,
+        elementsData
+    };
 };
 
 export const getElementDetails = (diagramId, elementName) => {
