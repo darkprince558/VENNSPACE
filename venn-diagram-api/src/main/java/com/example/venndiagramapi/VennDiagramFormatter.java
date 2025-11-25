@@ -33,7 +33,16 @@ public class VennDiagramFormatter<T> { // Still generic, will be <Object>
                 String regionDescription = formatMask(mask, setNames);
                 // Convert elements to string for printing
                 String elementsStr = elements.stream()
-                        .map(Object::toString)
+                        .map(obj -> {
+                            if (obj instanceof DiceRoll) {
+                                DiceRoll d = (DiceRoll) obj;
+                                return String.format("{\"die1\":%d,\"die2\":%d}", d.getDie1(), d.getDie2());
+                            } else if (obj instanceof PlayingCard) {
+                                PlayingCard c = (PlayingCard) obj;
+                                return String.format("{\"rank\":\"%s\",\"suit\":\"%s\"}", c.getRank(), c.getSuit());
+                            }
+                            return obj.toString();
+                        })
                         .collect(Collectors.joining(", "));
                 sb.append(String.format("Region %d (%s): [%s]\n", mask, regionDescription, elementsStr));
             }
@@ -43,14 +52,17 @@ public class VennDiagramFormatter<T> { // Still generic, will be <Object>
     }
 
     private String formatMask(int mask, List<String> setNames) {
-        if (mask == 0) return "Outside all sets (Universal Set)";
+        if (mask == 0)
+            return "Outside all sets (Universal Set)";
         StringBuilder sb = new StringBuilder();
         sb.append("In (");
         StringBuilder notIn = new StringBuilder();
         for (int i = 0; i < setNames.size(); i++) {
             String name = setNames.get(i);
-            if ((mask & (1 << i)) != 0) sb.append(name).append(", ");
-            else notIn.append(name).append(", ");
+            if ((mask & (1 << i)) != 0)
+                sb.append(name).append(", ");
+            else
+                notIn.append(name).append(", ");
         }
         String inStr = sb.substring(0, sb.length() - 2) + ")";
         String notInStr = (notIn.length() > 0) ? " ∖ Not in (" + notIn.substring(0, notIn.length() - 2) + ")" : "";

@@ -24,8 +24,8 @@ public class ProbabilityTemplateFactory {
     }
 
     private static DiagramWorkspace createDeckOfCards(String diagramId) {
-        // All cards are Strings
-        DiagramWorkspace workspace = new DiagramWorkspace(diagramId, "52-Card Deck", "STRING");
+        // Use the new PLAYING_CARD type
+        DiagramWorkspace workspace = new DiagramWorkspace(diagramId, "52-Card Deck", "PLAYING_CARD");
         VennDiagramModel<Object> model = workspace.getModel();
 
         String[] suits = { "H", "D", "C", "S" }; // Hearts, Diamonds, Clubs, Spades
@@ -42,7 +42,7 @@ public class ProbabilityTemplateFactory {
 
         for (String suit : suits) {
             for (String rank : ranks) {
-                String card = rank + suit;
+                PlayingCard card = new PlayingCard(rank, suit);
                 universalSet.add(card);
 
                 if (suit.equals("H"))

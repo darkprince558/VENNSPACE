@@ -121,6 +121,14 @@ public class DiagramManagerService {
         return getVennModel(diagramId).getSetNames();
     }
 
+    public List<SetDTO> getSetsInfo(String diagramId) {
+        VennDiagramModel<Object> model = getVennModel(diagramId);
+        List<String> names = model.getSetNames();
+        return names.stream()
+                .map(name -> new SetDTO(name, model.getElementsInSet(name).size()))
+                .collect(Collectors.toList());
+    }
+
     public Set<Object> getAllElements(String diagramId) {
         return getVennModel(diagramId).getUniversalSet();
     }

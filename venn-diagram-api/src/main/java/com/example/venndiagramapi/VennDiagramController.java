@@ -63,8 +63,8 @@ public class VennDiagramController {
      * Gets all set names for a specific diagram.
      */
     @GetMapping("/diagrams/{diagramId}/sets")
-    public List<String> getSetNames(@PathVariable String diagramId) {
-        return manager.getSetNames(diagramId);
+    public List<SetDTO> getSetNames(@PathVariable String diagramId) {
+        return manager.getSetsInfo(diagramId);
     }
 
     /**
