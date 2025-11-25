@@ -19,12 +19,15 @@ export default function DiagramEditor() {
     const [diagramName, setDiagramName] = useState('');
     const [elementType, setElementType] = useState('STRING');
     const [setNames, setSetNames] = useState([]);
+    const [setsInfo, setSetsInfo] = useState([]); // Store full SetDTOs {name, size}
     const [partitions, setPartitions] = useState('');
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [allElements, setAllElements] = useState([]);
     const [opResult, setOpResult] = useState(null);
     const [editStatus, setEditStatus] = useState('');
+    const [showProbability, setShowProbability] = useState(false);
+    const [showPartitions, setShowPartitions] = useState(true);
 
     // --- Element Modal State ---
     const [isElementModalOpen, setIsElementModalOpen] = useState(false);
@@ -49,7 +52,12 @@ export default function DiagramEditor() {
 
             setDiagramName(diagramName);
             setElementType(elementType);
-            setSetNames(setsData || []);
+
+            // setsData is now List<SetDTO> {name, size}
+            const safeSetsData = setsData || [];
+            setSetsInfo(safeSetsData);
+            setSetNames(safeSetsData.map(s => s.name));
+
             setPartitions(partitionsData || '');
             setAllElements(elementsData || []);
 
@@ -242,7 +250,22 @@ export default function DiagramEditor() {
             </button>
             <div>
                 <h2 className="mb-0">{isLoading ? 'Loading...' : diagramName}</h2>
-                {/* ID display removed as per user request */}
+                <label className="flex items-center gap-sm mt-sm" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
+                    <input
+                        type="checkbox"
+                        checked={showProbability}
+                        onChange={e => setShowProbability(e.target.checked)}
+                    />
+                    Show Probability Analysis
+                </label>
+                <label className="flex items-center gap-sm mt-xs" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
+                    <input
+                        type="checkbox"
+                        checked={showPartitions}
+                        onChange={e => setShowPartitions(e.target.checked)}
+                    />
+                    Show Partitions
+                </label>
             </div>
         </div>
     );
@@ -256,6 +279,9 @@ export default function DiagramEditor() {
                 <div className="flex flex-col gap-md" style={{ flex: 1, minWidth: '300px' }}>
                     <SetList
                         setNames={setNames}
+                        setsInfo={setsInfo}
+                        totalElements={allElements.length}
+                        showProbability={showProbability}
                         onOpenCreateSetModal={handleOpenCreateSetModal}
                         onOpenEditSetModal={handleOpenEditSetModal}
                     />
@@ -277,14 +303,20 @@ export default function DiagramEditor() {
                 <OperationsColumn
                     setNames={setNames}
                     opResult={opResult}
+                    totalElements={allElements.length}
+                    showProbability={showProbability}
                     onRunOperation={handleRunOperation}
                 />
 
                 {/* Column 3: Partitions */}
-                <PartitionsColumn
-                    partitions={partitions}
-                    isLoading={isLoading}
-                />
+                {showPartitions && (
+                    <PartitionsColumn
+                        partitions={partitions}
+                        totalElements={allElements.length}
+                        showProbability={showProbability}
+                        isLoading={isLoading}
+                    />
+                )}
 
                 {/* Modals */}
                 <ElementEditModal

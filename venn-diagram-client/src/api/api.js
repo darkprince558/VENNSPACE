@@ -86,7 +86,7 @@ export const fetchAllData = async (diagramId) => {
     return {
         diagramName: metadata.name,
         elementType: metadata.elementType,
-        setsData,
+        setsData, // Now an array of { name, size } objects
         partitionsData,
         elementsData
     };

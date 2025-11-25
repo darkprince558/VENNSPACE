@@ -1,27 +1,13 @@
-import React, { useMemo } from 'react';
+import { PlayingCard } from './PlayingCard';
 import { Dice } from './Dice';
 
-// This component renders the "Live Partitions" card
-export const PartitionsColumn = ({ partitions, isLoading }) => {
-    return (
-        <div className="card" style={{ flex: 2, minWidth: '400px' }}>
-            <h2 className="mb-md">Live Partitions</h2>
-            {isLoading ? (
-                <p className="text-muted">Loading...</p>
-            ) : (
-                <div style={{ overflowX: 'auto', maxHeight: '700px' }}>
-                    <PartitionTable partitionText={partitions} />
-                </div>
-            )}
-        </div>
-    );
-};
+// ... (PartitionsColumn component remains same)
 
 /**
  * A dedicated component to parse and display the partition text
  * in a clean table.
  */
-const PartitionTable = ({ partitionText }) => {
+const PartitionTable = ({ partitionText, totalElements, showProbability }) => {
     const parsedPartitions = useMemo(() => {
         if (!partitionText) return [];
         // The partition text format is: "Region <mask> (<desc>): [elements]"
@@ -36,37 +22,56 @@ const PartitionTable = ({ partitionText }) => {
                 let elementsRaw = match[3] || '';
                 let elements = elementsRaw;
                 let isDice = false;
+                let isCard = false;
+                let count = 0;
 
-                // Try to detect if elements are DiceRoll objects
-                // This is a bit hacky because we are parsing the string representation from the backend
-                // Ideally backend should return structured data for partitions too
-                if (elementsRaw.includes('DiceRoll')) {
-                    // If backend toString() includes class name, or if we can regex match
-                    // For now, let's assume the backend toString is "(d1,d2)" which is what we implemented
-                    // But if we want to be smarter, we might need to parse the JSON if available
-                }
+                const diceRegex = /\{"die1":(\d+),"die2":(\d+)\}/g; // Updated to match JSON format if changed, but wait, formatter outputs JSON now?
+                // Wait, let's check VennDiagramFormatter.java again.
+                // Yes: String.format("{\"die1\":%d,\"die2\":%d}", d.getDie1(), d.getDie2());
 
-                // If the backend returns JSON for partitions, we could parse it. 
-                // Currently it returns a formatted string. 
-                // Let's rely on the string format "(d1,d2)" for now, but we can't easily distinguish 
-                // between string "(1,2)" and dice roll (1,2) without more context.
-                // However, we can check if the string matches the dice pattern and try to render it.
+                // But wait, the previous regex was /\((\d),(\d)\)/g; which matched the OLD toString() format.
+                // I changed the formatter to output JSON for DiceRoll too!
+                // So I need to update Dice parsing as well.
 
-                const diceRegex = /\((\d),(\d)\)/g;
-                const diceMatches = [...elementsRaw.matchAll(diceRegex)];
+                const diceJsonRegex = /\{"die1":(\d+),"die2":(\d+)\}/g;
+                const cardJsonRegex = /\{"rank":"([^"]+)","suit":"([^"]+)"\}/g;
+
+                const diceMatches = [...elementsRaw.matchAll(diceJsonRegex)];
+                const cardMatches = [...elementsRaw.matchAll(cardJsonRegex)];
 
                 if (diceMatches.length > 0) {
                     elements = diceMatches.map(m => ({ die1: parseInt(m[1]), die2: parseInt(m[2]) }));
                     isDice = true;
-                } else if (elementsRaw.trim() === '') {
-                    elements = ' (empty)';
+                    count = diceMatches.length;
+                } else if (cardMatches.length > 0) {
+                    elements = cardMatches.map(m => ({ rank: m[1], suit: m[2] }));
+                    isCard = true;
+                    count = cardMatches.length;
+                } else {
+                    // Fallback for old format or simple strings
+                    const oldDiceRegex = /\((\d),(\d)\)/g;
+                    const oldDiceMatches = [...elementsRaw.matchAll(oldDiceRegex)];
+
+                    if (oldDiceMatches.length > 0) {
+                        elements = oldDiceMatches.map(m => ({ die1: parseInt(m[1]), die2: parseInt(m[2]) }));
+                        isDice = true;
+                        count = oldDiceMatches.length;
+                    } else if (elementsRaw.trim() === '') {
+                        elements = ' (empty)';
+                        count = 0;
+                    } else {
+                        const parts = elementsRaw.split(',').filter(s => s.trim().length > 0);
+                        count = parts.length;
+                    }
                 }
 
                 data.push({
                     region: match[1],
                     description: match[2],
                     elements: elements,
-                    isDice: isDice
+                    isDice: isDice,
+                    isCard: isCard,
+                    count: count
                 });
             }
         }
@@ -83,27 +88,47 @@ const PartitionTable = ({ partitionText }) => {
                 <tr style={{ background: 'var(--bg-hover)' }}>
                     <th style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', textAlign: 'left' }}>Region</th>
                     <th style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', textAlign: 'left' }}>Description</th>
+                    {showProbability && (
+                        <th style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', textAlign: 'left' }}>Stats</th>
+                    )}
                     <th style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', textAlign: 'left' }}>Elements</th>
                 </tr>
             </thead>
             <tbody>
-                {parsedPartitions.map(row => (
-                    <tr key={row.region}>
-                        <td style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', verticalAlign: 'top' }}>{row.region}</td>
-                        <td style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', verticalAlign: 'top' }}>{row.description}</td>
-                        <td style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', verticalAlign: 'top', wordBreak: 'break-word' }}>
-                            {row.isDice ? (
-                                <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                                    {row.elements.map((d, i) => (
-                                        <div key={i} title={`(${d.die1},${d.die2})`}>
-                                            <Dice die1={d.die1} die2={d.die2} size={20} />
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : row.elements}
-                        </td>
-                    </tr>
-                ))}
+                {parsedPartitions.map(row => {
+                    const percentage = totalElements > 0 ? ((row.count / totalElements) * 100).toFixed(1) : '0.0';
+                    return (
+                        <tr key={row.region}>
+                            <td style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', verticalAlign: 'top' }}>{row.region}</td>
+                            <td style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', verticalAlign: 'top' }}>{row.description}</td>
+                            {showProbability && (
+                                <td style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
+                                    <div style={{ fontWeight: 'bold' }}>{row.count} items</div>
+                                    <div className="text-muted text-sm">{percentage}%</div>
+                                </td>
+                            )}
+                            <td style={{ padding: 'var(--spacing-sm)', border: '1px solid var(--border)', verticalAlign: 'top', wordBreak: 'break-word' }}>
+                                {row.isDice ? (
+                                    <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                                        {row.elements.map((d, i) => (
+                                            <div key={i} title={`(${d.die1},${d.die2})`}>
+                                                <Dice die1={d.die1} die2={d.die2} size={20} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : row.isCard ? (
+                                    <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                                        {row.elements.map((c, i) => (
+                                            <div key={i} title={`${c.rank}${c.suit}`}>
+                                                <PlayingCard rank={c.rank} suit={c.suit} size={30} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : row.elements}
+                            </td>
+                        </tr>
+                    );
+                })}
             </tbody>
         </table>
     );

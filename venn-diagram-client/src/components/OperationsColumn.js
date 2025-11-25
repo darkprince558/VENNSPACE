@@ -7,20 +7,23 @@ export const OperationsColumn = ({
     opResult,
     defaultSetA,
     defaultSetB,
-    onRunOperation
+    onRunOperation,
+    totalElements,
+    showProbability
 }) => {
+    const safeSetNames = setNames || [];
     // These states are now local to this component
     const [operation, setOperation] = useState('union');
-    const [setA, setSetA] = useState(defaultSetA || (setNames.length > 0 ? setNames[0] : ''));
-    const [setB, setSetB] = useState(defaultSetB || (setNames.length > 0 ? setNames[0] : ''));
+    const [setA, setSetA] = useState(defaultSetA || (safeSetNames.length > 0 ? safeSetNames[0] : ''));
+    const [setB, setSetB] = useState(defaultSetB || (safeSetNames.length > 0 ? safeSetNames[0] : ''));
 
     // Update local state if props change (e.g., after set list is fetched)
     React.useEffect(() => {
-        if (setNames.length > 0) {
-            if (!setA) setSetA(setNames[0]);
-            if (!setB) setSetB(setNames[0]);
+        if (safeSetNames.length > 0) {
+            if (!setA) setSetA(safeSetNames[0]);
+            if (!setB) setSetB(safeSetNames[0]);
         }
-    }, [setNames, setA, setB]);
+    }, [safeSetNames, setA, setB]);
 
     const handleRun = () => {
         onRunOperation(operation, setA, setB);
@@ -96,8 +99,8 @@ export const OperationsColumn = ({
                     onChange={e => setSetA(e.target.value)}
                     className="select"
                 >
-                    {setNames && setNames.length > 0 ?
-                        setNames.map(name => <option key={name} value={name}>{name}</option>) :
+                    {safeSetNames.length > 0 ?
+                        safeSetNames.map(name => <option key={name} value={name}>{name}</option>) :
                         <option>No sets available</option>
                     }
                 </select>
@@ -112,8 +115,8 @@ export const OperationsColumn = ({
                         onChange={e => setSetB(e.target.value)}
                         className="select"
                     >
-                        {setNames && setNames.length > 0 ?
-                            setNames.map(name => <option key={name} value={name}>{name}</option>) :
+                        {safeSetNames.length > 0 ?
+                            safeSetNames.map(name => <option key={name} value={name}>{name}</option>) :
                             <option>No sets available</option>
                         }
                     </select>
@@ -123,11 +126,44 @@ export const OperationsColumn = ({
                 onClick={handleRun}
                 className="btn btn-primary w-100"
                 style={{ width: '100%' }}
-                disabled={setNames.length === 0}
+                disabled={safeSetNames.length === 0}
             >
                 Run Operation
             </button>
-            <h3 className="mt-lg mb-sm">Result:</h3>
+            <h3 className="mt-lg mb-sm flex justify-between items-center">
+                <span>Result:</span>
+                {opResult && showProbability && (
+                    <span className="text-muted text-sm" style={{ fontWeight: 'normal' }}>
+                        {(() => {
+                            let count = 0;
+                            if (Array.isArray(opResult)) {
+                                count = opResult.length;
+                            } else if (typeof opResult === 'string') {
+                                // Try to parse if stringified JSON
+                                try {
+                                    const parsed = JSON.parse(opResult);
+                                    if (Array.isArray(parsed)) count = parsed.length;
+                                } catch (e) {
+                                    // Fallback for simple strings or formatted lists
+                                    // This is rough, but better than nothing
+                                    if (opResult.includes('die1')) {
+                                        const diceRegex = /\((\d),(\d)\)/g;
+                                        const matches = [...opResult.matchAll(diceRegex)];
+                                        count = matches.length;
+                                    } else {
+                                        // Assume comma separated if not empty
+                                        if (opResult.trim().length > 0 && opResult !== '[]') {
+                                            count = opResult.split(',').length;
+                                        }
+                                    }
+                                }
+                            }
+                            const percentage = totalElements > 0 ? ((count / totalElements) * 100).toFixed(1) : '0.0';
+                            return `${count} items (${percentage}%)`;
+                        })()}
+                    </span>
+                )}
+            </h3>
             <div className="code-block">
                 {renderResult()}
             </div>
