@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from './api/api';
+import { DiceCountModal } from './components/DiceCountModal';
 
 // FIX: Changed to a default export
 export default function Dashboard() {
@@ -8,7 +9,7 @@ export default function Dashboard() {
     const [newDiagramName, setNewDiagramName] = useState('');
     const [newDiagramType, setNewDiagramType] = useState('STRING');
     const [template, setTemplate] = useState('DECK_OF_CARDS');
-    const [diceCount, setDiceCount] = useState(2);
+    const [isDiceModalOpen, setIsDiceModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -45,12 +46,8 @@ export default function Dashboard() {
     };
 
     // Handler for creating from a template
-    const handleCreateFromTemplate = async (e) => {
-        e.preventDefault();
-        let templateName = template;
-        if (template === 'DICE_ROLLS') {
-            templateName = `DICE_ROLLS_${diceCount}`;
-        }
+    // Helper to perform the API call
+    const createTemplate = async (templateName) => {
         console.log("Attempting to create from template:", templateName);
         setIsLoading(true);
         try {
@@ -62,6 +59,21 @@ export default function Dashboard() {
             setError(err.message);
             setIsLoading(false);
         }
+    };
+
+    // Handler for creating from a template
+    const handleCreateFromTemplate = async (e) => {
+        e.preventDefault();
+        if (template === 'DICE_ROLLS') {
+            setIsDiceModalOpen(true);
+        } else {
+            createTemplate(template);
+        }
+    };
+
+    const handleDiceConfirm = (count) => {
+        setIsDiceModalOpen(false);
+        createTemplate(`DICE_ROLLS_${count}`);
     };
 
     if (isLoading && diagrams.length === 0) {
@@ -126,19 +138,7 @@ export default function Dashboard() {
                                 <option value="DICE_ROLLS">Dice Rolls</option>
                             </select>
                         </div>
-                        {template === 'DICE_ROLLS' && (
-                            <div style={{ width: '100px' }}>
-                                <input
-                                    type="number"
-                                    className="input"
-                                    min="1"
-                                    max="5"
-                                    value={diceCount}
-                                    onChange={(e) => setDiceCount(parseInt(e.target.value))}
-                                    placeholder="Count"
-                                />
-                            </div>
-                        )}
+
                         <button type="submit" className="btn btn-secondary" disabled={isLoading}>
                             {isLoading ? 'Creating...' : 'Create'}
                         </button>
@@ -171,6 +171,11 @@ export default function Dashboard() {
                     )}
                 </div>
             </div>
+            <DiceCountModal
+                isOpen={isDiceModalOpen}
+                onClose={() => setIsDiceModalOpen(false)}
+                onConfirm={handleDiceConfirm}
+            />
         </div>
     );
 }
