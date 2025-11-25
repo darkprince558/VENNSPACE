@@ -237,7 +237,7 @@ export default function DiagramEditor() {
             <div className="layout-container text-center text-danger">
                 <h2>Error loading diagram</h2>
                 <p>{error.message}</p>
-                <button className="btn btn-secondary" onClick={() => navigate('/')}>Back to Dashboard</button>
+                <button className="btn btn-secondary" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
             </div>
         );
     }
@@ -245,7 +245,7 @@ export default function DiagramEditor() {
     // Header for the diagram editor page
     const header = (
         <div className="flex items-center gap-md mb-lg">
-            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/')}>
+            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/dashboard')}>
                 &larr; Back
             </button>
             <div>

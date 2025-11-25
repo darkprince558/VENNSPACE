@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import DiagramEditor from './DiagramEditor';
+import WelcomeScreen from './WelcomeScreen';
 
 
 function App() {
@@ -22,7 +23,7 @@ function App() {
         <div>
             <header className="card" style={{ borderRadius: 0, borderLeft: 0, borderRight: 0, borderTop: 0, padding: 'var(--spacing-md) var(--spacing-lg)' }}>
                 <div className="layout-container flex justify-between items-center" style={{ padding: 0 }}>
-                    <Link to="/" style={{ textDecoration: 'none' }}>
+                    <Link to="/dashboard" style={{ textDecoration: 'none' }}>
                         <h1 className="mb-0 text-primary" style={{ cursor: 'pointer' }}>
                             VennSpace
                         </h1>
@@ -37,7 +38,8 @@ function App() {
                 </div>
             </header>
             <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={<WelcomeScreen />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/diagram/:diagramId" element={<DiagramEditor />} />
             </Routes>
         </div>
