@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Dice } from './Dice';
+import { PlayingCard } from './PlayingCard';
 
 // This component renders the "Set Operations" card
 export const OperationsColumn = ({
@@ -33,43 +34,60 @@ export const OperationsColumn = ({
     const renderResult = () => {
         if (!opResult) return null;
 
-        // Try to parse if it looks like a list of DiceRolls
-        // The backend returns a list of objects, which might be stringified or passed as array
-        // If opResult is an array of objects with die1/die2
-        if (Array.isArray(opResult) && opResult.length > 0 && opResult[0].die1) {
+        // If it's a string (error message or legacy), show it
+        if (typeof opResult === 'string') return opResult;
+
+        if (Array.isArray(opResult)) {
+            if (opResult.length === 0) return <span className="text-muted">Empty Set</span>;
+
+            // Check for Dice (supports both old {die1, die2} and new {dice: []} formats)
+            if (opResult[0].dice !== undefined || opResult[0].die1 !== undefined) {
+                return (
+                    <div className="result-list">
+                        {opResult.map((roll, i) => {
+                            const diceValues = roll.dice || [roll.die1, roll.die2];
+                            return (
+                                <div key={i} className="result-item">
+                                    <div className="flex gap-sm">
+                                        <Dice dice={diceValues} size={24} />
+                                    </div>
+                                    <span className="text-muted">({diceValues.join(', ')})</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+            }
+
+            // Check for Cards
+            if (opResult[0].rank !== undefined && opResult[0].suit !== undefined) {
+                return (
+                    <div className="result-list">
+                        {opResult.map((card, i) => (
+                            <div key={i} className="result-item">
+                                <PlayingCard rank={card.rank} suit={card.suit} size={40} />
+                                <span className="text-muted">{card.rank}{card.suit}</span>
+                            </div>
+                        ))}
+                    </div>
+                );
+            }
+
+            // Default: List of strings/numbers
             return (
-                <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                    {opResult.map((roll, i) => (
-                        <div key={i} title={`(${roll.die1},${roll.die2})`}>
-                            <Dice die1={roll.die1} die2={roll.die2} size={24} />
+                <div className="result-list">
+                    {opResult.map((item, i) => (
+                        <div key={i} className="result-item">
+                            <span style={{ fontWeight: 500 }}>
+                                {typeof item === 'object' ? JSON.stringify(item) : String(item)}
+                            </span>
                         </div>
                     ))}
                 </div>
             );
         }
 
-        // Fallback for string representation (e.g. "[ (1,1), (1,2) ]")
-        // We can try to regex parse it if it's a string
-        if (typeof opResult === 'string' && opResult.includes('die1')) {
-            try {
-                const parsed = JSON.parse(opResult);
-                if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].die1) {
-                    return (
-                        <div className="flex gap-sm" style={{ flexWrap: 'wrap' }}>
-                            {parsed.map((roll, i) => (
-                                <div key={i} title={`(${roll.die1},${roll.die2})`}>
-                                    <Dice die1={roll.die1} die2={roll.die2} size={24} />
-                                </div>
-                            ))}
-                        </div>
-                    );
-                }
-            } catch (e) {
-                // Ignore parse error, just show string
-            }
-        }
-
-        return opResult.toString();
+        return String(opResult);
     };
 
     return (

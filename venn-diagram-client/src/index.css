@@ -371,3 +371,4 @@ p {
 }
 
 @import './components/Toolbar.css';
+@import './components/OperationsList.css';

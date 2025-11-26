@@ -79,8 +79,7 @@ export default function DiagramEditor() {
         setOpResult('Loading query...');
         try {
             const data = await api.runOperation(diagramId, operation, setA, setB);
-            const resultString = `[ ${data.join(', ')} ]`;
-            setOpResult(resultString);
+            setOpResult(data);
         } catch (error) {
             setOpResult(`Error: ${error.message}`);
         }
