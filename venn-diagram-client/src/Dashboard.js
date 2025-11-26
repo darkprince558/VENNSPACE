@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from './api/api';
-import { DiceCountModal } from './components/DiceCountModal';
+import { TemplateCreationModal } from './components/TemplateCreationModal';
 
 // FIX: Changed to a default export
 export default function Dashboard() {
@@ -9,7 +9,7 @@ export default function Dashboard() {
     const [newDiagramName, setNewDiagramName] = useState('');
     const [newDiagramType, setNewDiagramType] = useState('STRING');
     const [template, setTemplate] = useState('DECK_OF_CARDS');
-    const [isDiceModalOpen, setIsDiceModalOpen] = useState(false);
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -64,16 +64,16 @@ export default function Dashboard() {
     // Handler for creating from a template
     const handleCreateFromTemplate = async (e) => {
         e.preventDefault();
-        if (template === 'DICE_ROLLS') {
-            setIsDiceModalOpen(true);
-        } else {
-            createTemplate(template);
-        }
+        setIsTemplateModalOpen(true);
     };
 
-    const handleDiceConfirm = (count) => {
-        setIsDiceModalOpen(false);
-        createTemplate(`DICE_ROLLS_${count}`);
+    const handleTemplateConfirm = ({ name, diceCount }) => {
+        setIsTemplateModalOpen(false);
+        if (template === 'DICE_ROLLS') {
+            createTemplate(`DICE_ROLLS_${diceCount}`, name);
+        } else {
+            createTemplate(template, name);
+        }
     };
 
     if (isLoading && diagrams.length === 0) {
@@ -139,7 +139,7 @@ export default function Dashboard() {
                             </select>
                         </div>
 
-                        <button type="submit" className="btn btn-secondary" disabled={isLoading}>
+                        <button type="submit" className="btn btn-primary" disabled={isLoading}>
                             {isLoading ? 'Creating...' : 'Create'}
                         </button>
                     </form>
@@ -171,10 +171,11 @@ export default function Dashboard() {
                     )}
                 </div>
             </div>
-            <DiceCountModal
-                isOpen={isDiceModalOpen}
-                onClose={() => setIsDiceModalOpen(false)}
-                onConfirm={handleDiceConfirm}
+            <TemplateCreationModal
+                isOpen={isTemplateModalOpen}
+                onClose={() => setIsTemplateModalOpen(false)}
+                onConfirm={handleTemplateConfirm}
+                templateType={template}
             />
         </div>
     );

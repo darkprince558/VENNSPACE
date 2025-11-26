@@ -4,7 +4,6 @@ import Dashboard from './Dashboard';
 import DiagramEditor from './DiagramEditor';
 import WelcomeScreen from './WelcomeScreen';
 
-
 function App() {
     // Theme State
     const [theme, setTheme] = useState('light');
