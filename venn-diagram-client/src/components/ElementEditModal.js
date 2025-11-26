@@ -73,22 +73,20 @@ export const ElementEditModal = ({
                 </h2>
 
                 <form onSubmit={handleSave}>
-                    <div className="form-group">
-                        <label className="label">
-                            Element Name:
-                        </label>
-                        <input
-                            type="text"
-                            value={elementNewName}
-                            onChange={e => setElementNewName(e.target.value)}
-                            placeholder={isCreating ? 'New element name' : ''}
-                            className="input"
-                            disabled={!isCreating && isDice} // Disable renaming for Dice for now to avoid complexity
-                        />
-                        {!isCreating && isDice && (
-                            <p className="text-muted text-sm mt-sm">Renaming dice rolls is not supported yet.</p>
-                        )}
-                    </div>
+                    {(isCreating || (elementType !== 'DICE_ROLL' && elementType !== 'PLAYING_CARD')) && (
+                        <div className="form-group">
+                            <label className="label">
+                                Element Name:
+                            </label>
+                            <input
+                                type="text"
+                                value={elementNewName}
+                                onChange={e => setElementNewName(e.target.value)}
+                                placeholder={isCreating ? 'New element name' : ''}
+                                className="input"
+                            />
+                        </div>
+                    )}
 
                     <h4 className="mt-md mb-sm">Set Membership:</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '200px', overflowY: 'auto' }}>
